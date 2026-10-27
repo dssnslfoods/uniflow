@@ -19,7 +19,10 @@ export type Machine = {
   sort_order: number
 }
 
-export type MachineInput = Omit<Machine, 'id' | 'status' | 'sort_order'>
+export type MachineInput = Omit<Machine, 'id' | 'status' | 'sort_order'> & {
+  process_ids: string[]
+  cost_per_hour: number | null   // null = leave unchanged (caller cannot see costs)
+}
 
 const columns =
   'id, code, name, machine_type, capacity_unit, max_cap_per_hour, setup_min, efficiency_pct, crew_size, status, sort_order'
@@ -46,18 +49,70 @@ export function useMachines() {
   })
 }
 
+// Machine ↔ process capability (BR: machine must support the step's process).
+export function useMachineProcesses() {
+  const { claims } = useAuth()
+  return useQuery({
+    queryKey: ['machine_processes', claims?.tenant_id],
+    queryFn: async () => {
+      const { data, error } = await db().from('machine_processes').select('machine_id, process_id')
+      if (error) throw error
+      return data as { machine_id: string; process_id: string }[]
+    },
+  })
+}
+
+// RLS returns rows only to admin/executive/manager.
+export function useMachineCosts(enabled: boolean) {
+  const { claims } = useAuth()
+  return useQuery({
+    queryKey: ['machine_costs', claims?.tenant_id],
+    enabled,
+    queryFn: async () => {
+      const { data, error } = await db().from('machine_costs').select('machine_id, cost_per_hour')
+      if (error) throw error
+      return new Map((data as { machine_id: string; cost_per_hour: number }[]).map((r) => [r.machine_id, r.cost_per_hour]))
+    },
+  })
+}
+
 export function useSaveMachine() {
   const key = useKey()
   const qc = useQueryClient()
+  const { claims } = useAuth()
   return useMutation({
-    mutationFn: async ({ id, ...input }: MachineInput & { id?: string }) => {
-      const query = id
-        ? db().from('machines').update(input).eq('id', id)
-        : db().from('machines').insert(input)
-      const { error } = await query
+    mutationFn: async ({ id, process_ids, cost_per_hour, ...input }: MachineInput & { id?: string }) => {
+      const { data, error } = await (id
+        ? db().from('machines').update(input).eq('id', id).select('id').single()
+        : db().from('machines').insert(input).select('id').single())
       if (error) throw error
+      const machineId = (data as { id: string }).id
+
+      const { error: delError } = await db()
+        .from('machine_processes')
+        .delete()
+        .eq('machine_id', machineId)
+        .not('process_id', 'in', `(${process_ids.join(',') || '00000000-0000-0000-0000-000000000000'})`)
+      if (delError) throw delError
+      if (process_ids.length) {
+        const { error: linkError } = await db()
+          .from('machine_processes')
+          .upsert(process_ids.map((process_id) => ({ machine_id: machineId, process_id })), { ignoreDuplicates: true })
+        if (linkError) throw linkError
+      }
+
+      if (cost_per_hour !== null) {
+        const { error: costError } = await db()
+          .from('machine_costs')
+          .upsert({ machine_id: machineId, cost_per_hour })
+        if (costError) throw costError
+      }
     },
-    onSettled: () => qc.invalidateQueries({ queryKey: key }),
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: key })
+      qc.invalidateQueries({ queryKey: ['machine_processes', claims?.tenant_id] })
+      qc.invalidateQueries({ queryKey: ['machine_costs', claims?.tenant_id] })
+    },
   })
 }
 

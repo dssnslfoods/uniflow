@@ -24,7 +24,10 @@ begin
   insert into app.material_costs (material_id, std_cost) values (v_mat, 2.5);
   insert into app.workflow_templates (name) values ('นามบัตร') returning id into v_tpl;
   insert into app.workflow_template_steps (template_id, seq, process_id) values (v_tpl, 1, v_proc);
-  perform app.next_doc_no('SO');
+  insert into app.sales_orders (customer_id, customer_po_no, due_date)
+    select id, 'PO-1', current_date + 7 from app.customers;
+  insert into app.sales_order_items (sales_order_id, line_no, description, qty)
+    select id, 1, 'นามบัตร', 1000 from app.sales_orders;
 end $$;
 
 create temp table t_ctx as

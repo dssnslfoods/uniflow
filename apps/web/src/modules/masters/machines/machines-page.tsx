@@ -8,7 +8,16 @@ import { Input } from '@/shared/ui/input'
 import { StatusBadge, type MachineStatus } from '@/shared/ui/status-badge'
 import { useToast } from '@/shared/ui/toast'
 import { MachineForm } from './machine-form'
-import { useArchiveMachine, useMachines, useSaveMachine, useSetMachineStatus, type Machine } from './api'
+import { useProcesses } from '../processes/api'
+import {
+  useArchiveMachine,
+  useMachineCosts,
+  useMachineProcesses,
+  useMachines,
+  useSaveMachine,
+  useSetMachineStatus,
+  type Machine,
+} from './api'
 
 const statuses: MachineStatus[] = ['active', 'maintenance', 'inactive']
 
@@ -26,6 +35,13 @@ export function MachinesPage() {
 
   const canEdit = hasRole('admin', 'manager')
   const canSetStatus = hasRole('admin', 'manager', 'supervisor')
+  const showCost = hasRole('admin', 'manager', 'executive')
+  const processes = useProcesses()
+  const links = useMachineProcesses()
+  const costs = useMachineCosts(showCost)
+  const processName = useMemo(() => new Map((processes.data ?? []).map((p) => [p.id, p.name])), [processes.data])
+  const processesOf = (machineId: string) =>
+    (links.data ?? []).filter((l) => l.machine_id === machineId).map((l) => l.process_id)
 
   const rows = useMemo(() => {
     const q = query.trim().toLowerCase()
@@ -120,6 +136,15 @@ export function MachinesPage() {
                 <Stat label={t('machines.efficiency')} value={`${m.efficiency_pct}%`} />
                 <Stat label={t('machines.setup')} value={m.setup_min.toLocaleString()} />
               </dl>
+              {processesOf(m.id).length > 0 && (
+                <div className="flex flex-wrap gap-1">
+                  {processesOf(m.id).map((pid) => (
+                    <span key={pid} className="rounded-md bg-surface-2 px-1.5 py-0.5 text-[11px] text-muted">
+                      {processName.get(pid)}
+                    </span>
+                  ))}
+                </div>
+              )}
               {(canSetStatus || canEdit) && (
                 <div className="flex items-center justify-between gap-2 border-t border-border pt-3">
                   {canSetStatus && (
@@ -157,6 +182,10 @@ export function MachinesPage() {
           key={editing === 'new' ? 'new' : editing.id}
           open
           machine={editing === 'new' ? null : editing}
+          processes={processes.data ?? []}
+          processIds={editing === 'new' ? [] : processesOf(editing.id)}
+          cost={editing === 'new' ? 0 : costs.data?.get(editing.id) ?? 0}
+          showCost={canEdit}
           saving={save.isPending}
           error={save.error ? errorMessage(save.error) : null}
           onClose={() => {

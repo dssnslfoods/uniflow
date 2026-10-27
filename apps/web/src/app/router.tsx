@@ -1,3 +1,4 @@
+import type { RouteComponent } from '@tanstack/react-router'
 import {
   createRootRouteWithContext,
   createRoute,
@@ -10,6 +11,11 @@ import { AppShell } from './app-shell'
 import { LoginPage } from '@/modules/platform/login-page'
 import { OnboardingPage } from '@/modules/platform/onboarding-page'
 import { MachinesPage } from '@/modules/masters/machines/machines-page'
+import { ProcessesPage } from '@/modules/masters/processes/processes-page'
+import { CustomersPage } from '@/modules/masters/customers/customers-page'
+import { TemplatesPage } from '@/modules/masters/templates/templates-page'
+import { OrdersPage } from '@/modules/orders/orders-page'
+import { NewOrderPage, OrderEditorPage } from '@/modules/orders/order-editor-page'
 
 type Ctx = { auth: AuthState }
 
@@ -48,7 +54,7 @@ const indexRoute = createRoute({
   getParentRoute: () => appRoute,
   path: '/',
   beforeLoad: () => {
-    throw redirect({ to: '/machines' })
+    throw redirect({ to: '/orders' })
   },
 })
 
@@ -58,10 +64,34 @@ const machinesRoute = createRoute({
   component: MachinesPage,
 })
 
+// Generic keeps the literal path so typed <Link to> knows every route.
+const page = <P extends string>(path: P, component: RouteComponent) =>
+  createRoute({ getParentRoute: () => appRoute, path, component })
+
+const ordersRoute = page('/orders', OrdersPage)
+const newOrderRoute = page('/orders/new', NewOrderPage)
+const orderRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: '/orders/$orderId',
+  component: function OrderRoute() {
+    const { orderId } = orderRoute.useParams()
+    return <OrderEditorPage orderId={orderId} />
+  },
+})
+
 const routeTree = rootRoute.addChildren([
   loginRoute,
   onboardingRoute,
-  appRoute.addChildren([indexRoute, machinesRoute]),
+  appRoute.addChildren([
+    indexRoute,
+    ordersRoute,
+    newOrderRoute,
+    orderRoute,
+    machinesRoute,
+    page('/processes', ProcessesPage),
+    page('/customers', CustomersPage),
+    page('/templates', TemplatesPage),
+  ]),
 ])
 
 export const router = createRouter({ routeTree, context: { auth: undefined! } })

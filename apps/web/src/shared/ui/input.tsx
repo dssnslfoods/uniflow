@@ -1,4 +1,11 @@
-import { forwardRef, useId, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes } from 'react'
+import {
+  forwardRef,
+  useId,
+  type InputHTMLAttributes,
+  type ReactNode,
+  type SelectHTMLAttributes,
+  type TextareaHTMLAttributes,
+} from 'react'
 import { cn } from '@/lib/utils'
 
 const control =
@@ -17,6 +24,13 @@ export const Select = forwardRef<HTMLSelectElement, SelectHTMLAttributes<HTMLSel
   ref,
 ) {
   return <select ref={ref} className={cn(control, 'pr-8', className)} {...props} />
+})
+
+export const Textarea = forwardRef<HTMLTextAreaElement, TextareaHTMLAttributes<HTMLTextAreaElement>>(function Textarea(
+  { className, ...props },
+  ref,
+) {
+  return <textarea ref={ref} className={cn(control, 'h-auto min-h-20 py-2', className)} {...props} />
 })
 
 type FieldProps = { label: string; hint?: string; children: (id: string) => ReactNode; className?: string }

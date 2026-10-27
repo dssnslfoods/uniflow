@@ -17,7 +17,7 @@ export function OnboardingPage() {
 
   function submit(e: FormEvent) {
     e.preventDefault()
-    create.mutate(name, { onSuccess: () => navigate({ to: '/machines' }) })
+    create.mutate(name, { onSuccess: () => navigate({ to: '/orders' }) })
   }
 
   return (

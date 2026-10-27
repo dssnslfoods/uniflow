@@ -1,7 +1,7 @@
 import { useState, type ButtonHTMLAttributes } from 'react'
 import { Link, Outlet } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import { Factory, Gauge, KanbanSquare, Languages, LogOut, Moon, Sun } from 'lucide-react'
+import { Factory, FileText, Gauge, KanbanSquare, Languages, Layers, LogOut, Moon, Sun, Users, Workflow } from 'lucide-react'
 import { useAuth } from './auth'
 import { useMyTenants, useSwitchTenant } from '@/modules/platform/api'
 import { setLanguage } from '@/shared/i18n'
@@ -9,11 +9,26 @@ import { useToast } from '@/shared/ui/toast'
 import { errorMessage } from '@/lib/errors'
 import { cn } from '@/lib/utils'
 
-const nav = [
-  { to: '/board', key: 'board', Icon: KanbanSquare, soon: true },
-  { to: '/dashboard', key: 'dashboard', Icon: Gauge, soon: true },
-  { to: '/machines', key: 'machines', Icon: Factory, soon: false },
-] as const
+type NavItem = { to: string; key: string; Icon: typeof Factory; soon?: boolean }
+
+const navGroups: { key?: string; items: NavItem[] }[] = [
+  {
+    items: [
+      { to: '/dashboard', key: 'dashboard', Icon: Gauge, soon: true },
+      { to: '/board', key: 'board', Icon: KanbanSquare, soon: true },
+      { to: '/orders', key: 'orders', Icon: FileText },
+    ],
+  },
+  {
+    key: 'masters',
+    items: [
+      { to: '/customers', key: 'customers', Icon: Users },
+      { to: '/machines', key: 'machines', Icon: Factory },
+      { to: '/processes', key: 'processes', Icon: Workflow },
+      { to: '/templates', key: 'templates', Icon: Layers },
+    ],
+  },
+]
 
 function useTheme() {
   const [dark, setDark] = useState(() => document.documentElement.dataset.theme === 'dark'
@@ -47,25 +62,34 @@ export function AppShell() {
         </div>
 
         <nav className="flex gap-1 overflow-x-auto md:flex-col">
-          {nav.map(({ to, key, Icon, soon }) =>
-            soon ? (
-              <span key={key} className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-muted/70" aria-disabled>
-                <Icon className="size-4" aria-hidden />
-                <span className="flex-1 whitespace-nowrap">{t(`nav.${key}`)}</span>
-                <span className="rounded bg-surface-2 px-1.5 text-[10px]">{t('nav.soon')}</span>
-              </span>
-            ) : (
-              <Link
-                key={key}
-                to={to}
-                className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-fg hover:bg-surface-2"
-                activeProps={{ className: 'bg-surface-2 font-medium' }}
-              >
-                <Icon className="size-4" aria-hidden />
-                <span className="whitespace-nowrap">{t(`nav.${key}`)}</span>
-              </Link>
-            ),
-          )}
+          {navGroups.map((group, gi) => (
+            <div key={gi} className="flex gap-1 md:flex-col">
+              {group.key && (
+                <div className="hidden px-2.5 pb-1 pt-4 text-[11px] font-medium uppercase tracking-wide text-muted md:block">
+                  {t(`nav.${group.key}`)}
+                </div>
+              )}
+              {group.items.map(({ to, key, Icon, soon }) =>
+                soon ? (
+                  <span key={key} className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-muted/70" aria-disabled>
+                    <Icon className="size-4" aria-hidden />
+                    <span className="flex-1 whitespace-nowrap">{t(`nav.${key}`)}</span>
+                    <span className="rounded bg-surface-2 px-1.5 text-[10px]">{t('nav.soon')}</span>
+                  </span>
+                ) : (
+                  <Link
+                    key={key}
+                    to={to}
+                    className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-fg hover:bg-surface-2"
+                    activeProps={{ className: 'bg-surface-2 font-medium' }}
+                  >
+                    <Icon className="size-4" aria-hidden />
+                    <span className="whitespace-nowrap">{t(`nav.${key}`)}</span>
+                  </Link>
+                ),
+              )}
+            </div>
+          ))}
         </nav>
 
         <div className="mt-auto hidden flex-col gap-2 border-t border-border pt-3 md:flex">

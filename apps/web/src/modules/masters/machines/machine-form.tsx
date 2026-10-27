@@ -3,11 +3,14 @@ import { useTranslation } from 'react-i18next'
 import { Button } from '@/shared/ui/button'
 import { Drawer } from '@/shared/ui/drawer'
 import { Field, Input, Select } from '@/shared/ui/input'
+import { Check } from 'lucide-react'
+import { cn } from '@/lib/utils'
+import type { Process } from '../processes/api'
 import type { CapacityUnit, Machine, MachineInput } from './api'
 
 const units: CapacityUnit[] = ['sheet', 'impression', 'piece', 'meter', 'kg']
 
-const blank: MachineInput = {
+const blank: Omit<MachineInput, 'process_ids' | 'cost_per_hour'> = {
   code: '',
   name: '',
   machine_type: '',
@@ -20,6 +23,10 @@ const blank: MachineInput = {
 
 type Props = {
   machine: Machine | null
+  processes: Process[]
+  processIds: string[]
+  cost: number | null
+  showCost: boolean
   open: boolean
   saving: boolean
   error: string | null
@@ -27,15 +34,29 @@ type Props = {
   onSave: (input: MachineInput & { id?: string }) => void
 }
 
-export function MachineForm({ machine, open, saving, error, onClose, onSave }: Props) {
+export function MachineForm({ machine, processes, processIds, cost, showCost, open, saving, error, onClose, onSave }: Props) {
   const { t } = useTranslation()
-  const [form, setForm] = useState<MachineInput>(machine ?? blank)
+  const [form, setForm] = useState<MachineInput>({
+    ...(machine ?? blank),
+    process_ids: processIds,
+    cost_per_hour: cost,
+  })
+  // Machines run in-house steps; design/outsource/delivery never sit on a machine.
+  const capable = processes.filter((p) => p.step_type === 'internal' || p.step_type === 'qc')
+  const toggleProcess = (id: string) =>
+    set('process_ids', form.process_ids.includes(id) ? form.process_ids.filter((x) => x !== id) : [...form.process_ids, id])
   const set = <K extends keyof MachineInput>(k: K, v: MachineInput[K]) => setForm((f) => ({ ...f, [k]: v }))
   const num = (v: string) => (v === '' ? 0 : Number(v))
 
   function submit(e: FormEvent) {
     e.preventDefault()
-    onSave({ ...form, machine_type: form.machine_type || null, id: machine?.id })
+    const { id: _ignored, status: _s, sort_order: _o, ...values } = form as MachineInput & Partial<Machine>
+    onSave({
+      ...values,
+      machine_type: form.machine_type || null,
+      cost_per_hour: showCost ? form.cost_per_hour ?? 0 : null,
+      id: machine?.id,
+    })
   }
 
   return (
@@ -97,6 +118,41 @@ export function MachineForm({ machine, open, saving, error, onClose, onSave }: P
               value={form.crew_size} onChange={(e) => set('crew_size', num(e.target.value))} />
           )}
         </Field>
+        {showCost && (
+          <Field label={t('machines.costPerHour')}>
+            {(id) => (
+              <Input id={id} type="number" inputMode="decimal" min={0} step="any" className="tabular"
+                value={form.cost_per_hour ?? ''} onChange={(e) => set('cost_per_hour', num(e.target.value))} />
+            )}
+          </Field>
+        )}
+        <fieldset className="col-span-2 flex flex-col gap-2">
+          <legend className="mb-1.5 text-[13px] font-medium">{t('machines.processes')}</legend>
+          {capable.length === 0 ? (
+            <p className="text-xs text-muted">{t('machines.noProcesses')}</p>
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              {capable.map((p) => {
+                const on = form.process_ids.includes(p.id)
+                return (
+                  <button
+                    key={p.id}
+                    type="button"
+                    aria-pressed={on}
+                    onClick={() => toggleProcess(p.id)}
+                    className={cn(
+                      'inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-sm transition-colors',
+                      on ? 'border-brand bg-brand/10 text-brand' : 'border-border text-muted hover:text-fg',
+                    )}
+                  >
+                    {on && <Check className="size-3.5" aria-hidden />}
+                    {p.name}
+                  </button>
+                )
+              })}
+            </div>
+          )}
+        </fieldset>
         {error && (
           <p className="col-span-2 rounded-lg bg-status-risk/10 px-3 py-2 text-sm text-status-risk">{error}</p>
         )}
