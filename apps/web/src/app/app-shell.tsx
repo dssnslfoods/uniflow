@@ -1,9 +1,10 @@
 import { useState, type ButtonHTMLAttributes } from 'react'
 import { Link, Outlet } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import { Factory, FileText, Gauge, KanbanSquare, Languages, Layers, LogOut, Moon, Sun, Users, Workflow } from 'lucide-react'
+import { CheckCheck, Factory, FileText, Gauge, KanbanSquare, Languages, Layers, LogOut, Moon, Sun, Users, Workflow } from 'lucide-react'
 import { useAuth } from './auth'
 import { useMyTenants, useSwitchTenant } from '@/modules/platform/api'
+import { usePendingApprovals } from '@/modules/production/api'
 import { setLanguage } from '@/shared/i18n'
 import { useToast } from '@/shared/ui/toast'
 import { errorMessage } from '@/lib/errors'
@@ -17,6 +18,7 @@ const navGroups: { key?: string; items: NavItem[] }[] = [
       { to: '/dashboard', key: 'dashboard', Icon: Gauge, soon: true },
       { to: '/board', key: 'board', Icon: KanbanSquare, soon: true },
       { to: '/orders', key: 'orders', Icon: FileText },
+      { to: '/approvals', key: 'approvals', Icon: CheckCheck },
     ],
   },
   {
@@ -49,6 +51,8 @@ export function AppShell() {
   const toast = useToast()
   const theme = useTheme()
   const current = tenants.data?.find((x) => x.tenant_id === auth.claims?.tenant_id)
+  const pending = usePendingApprovals(auth.hasRole('manager'))
+  const badges: Record<string, number> = { approvals: pending.data?.length ?? 0 }
 
   return (
     <div className="flex min-h-full flex-col md:flex-row">
@@ -84,7 +88,10 @@ export function AppShell() {
                     activeProps={{ className: 'bg-surface-2 font-medium' }}
                   >
                     <Icon className="size-4" aria-hidden />
-                    <span className="whitespace-nowrap">{t(`nav.${key}`)}</span>
+                    <span className="flex-1 whitespace-nowrap">{t(`nav.${key}`)}</span>
+                    {badges[key] > 0 && (
+                      <span className="tabular rounded-full bg-status-paused px-1.5 text-[11px] font-semibold text-white">{badges[key]}</span>
+                    )}
                   </Link>
                 ),
               )}

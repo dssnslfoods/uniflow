@@ -18,6 +18,7 @@ const blank: Omit<MachineInput, 'process_ids' | 'cost_per_hour'> = {
   max_cap_per_hour: 0,
   setup_min: 0,
   efficiency_pct: 85,
+  makeready_waste_units: 0,
   crew_size: 1,
 }
 
@@ -110,6 +111,12 @@ export function MachineForm({ machine, processes, processIds, cost, showCost, op
           {(id) => (
             <Input id={id} type="number" inputMode="decimal" min={1} max={100} step="any" className="tabular"
               value={form.efficiency_pct} onChange={(e) => set('efficiency_pct', num(e.target.value))} required />
+          )}
+        </Field>
+        <Field label={t('machines.makeready')}>
+          {(id) => (
+            <Input id={id} type="number" inputMode="decimal" min={0} step="any" className="tabular"
+              value={form.makeready_waste_units} onChange={(e) => set('makeready_waste_units', num(e.target.value))} />
           )}
         </Field>
         <Field label={t('machines.crew')}>

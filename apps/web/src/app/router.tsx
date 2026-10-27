@@ -16,6 +16,8 @@ import { CustomersPage } from '@/modules/masters/customers/customers-page'
 import { TemplatesPage } from '@/modules/masters/templates/templates-page'
 import { OrdersPage } from '@/modules/orders/orders-page'
 import { NewOrderPage, OrderEditorPage } from '@/modules/orders/order-editor-page'
+import { PlanPage } from '@/modules/production/plan-page'
+import { ApprovalsPage } from '@/modules/production/approvals-page'
 
 type Ctx = { auth: AuthState }
 
@@ -79,6 +81,15 @@ const orderRoute = createRoute({
   },
 })
 
+const planRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: '/orders/$orderId/plan',
+  component: function PlanRoute() {
+    const { orderId } = planRoute.useParams()
+    return <PlanPage key={orderId} orderId={orderId} />
+  },
+})
+
 const routeTree = rootRoute.addChildren([
   loginRoute,
   onboardingRoute,
@@ -87,6 +98,8 @@ const routeTree = rootRoute.addChildren([
     ordersRoute,
     newOrderRoute,
     orderRoute,
+    planRoute,
+    page('/approvals', ApprovalsPage),
     machinesRoute,
     page('/processes', ProcessesPage),
     page('/customers', CustomersPage),

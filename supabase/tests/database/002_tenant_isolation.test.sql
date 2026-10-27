@@ -28,6 +28,11 @@ begin
     select id, 'PO-1', current_date + 7 from app.customers;
   insert into app.sales_order_items (sales_order_id, line_no, description, qty)
     select id, 1, 'นามบัตร', 1000 from app.sales_orders;
+  perform api.confirm_sales_order(id) from app.sales_orders;
+  perform api.create_job(o.id, 'นามบัตร', v_tpl,
+    jsonb_build_array(jsonb_build_object('sales_order_item_id', i.id, 'qty', 1000)))
+  from app.sales_orders o join app.sales_order_items i on i.sales_order_id = o.id;
+  perform api.submit_po_plan(id) from app.sales_orders;
 end $$;
 
 create temp table t_ctx as

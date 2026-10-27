@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type DragEvent, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useNavigate } from '@tanstack/react-router'
-import { ArrowLeft, ExternalLink, FileUp, Lock, Plus, Trash2 } from 'lucide-react'
+import { ArrowLeft, ExternalLink, FileUp, Lock, Plus, Trash2, Workflow } from 'lucide-react'
 import { useAuth } from '@/app/auth'
 import { errorMessage } from '@/lib/errors'
 import { cn } from '@/lib/utils'
@@ -131,7 +131,7 @@ function OrderEditor({ order }: { order: Order | null }) {
       const id = await persist()
       await confirm.mutateAsync({ id })
       toast({ tone: 'success', message: t('orders.confirmed') })
-      navigate({ to: '/orders/$orderId', params: { orderId: id } })
+      navigate({ to: '/orders/$orderId/plan', params: { orderId: id } })
     } catch {
       // shown inline
     }
@@ -154,6 +154,14 @@ function OrderEditor({ order }: { order: Order | null }) {
         <h1 className="text-xl font-semibold">{order ? order.doc_no : t('orders.newTitle')}</h1>
         {order && <SoStatusPill status={order.status} />}
         <div className="ml-auto flex flex-wrap gap-2">
+          {order && (order.status === 'confirmed' || order.status === 'in_progress') && (
+            <Link to="/orders/$orderId/plan" params={{ orderId: order.id }}>
+              <Button>
+                <Workflow className="size-4" aria-hidden />
+                {t('plan.open')}
+              </Button>
+            </Link>
+          )}
           {order?.status === 'confirmed' && canManage && (
             <>
               <Button variant="secondary" onClick={() => reopen.mutate({ id: order.id })} loading={reopen.isPending}>

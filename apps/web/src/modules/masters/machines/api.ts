@@ -14,6 +14,7 @@ export type Machine = {
   max_cap_per_hour: number
   setup_min: number
   efficiency_pct: number
+  makeready_waste_units: number
   crew_size: number
   status: MachineStatus
   sort_order: number
@@ -25,7 +26,7 @@ export type MachineInput = Omit<Machine, 'id' | 'status' | 'sort_order'> & {
 }
 
 const columns =
-  'id, code, name, machine_type, capacity_unit, max_cap_per_hour, setup_min, efficiency_pct, crew_size, status, sort_order'
+  'id, code, name, machine_type, capacity_unit, max_cap_per_hour, setup_min, efficiency_pct, makeready_waste_units, crew_size, status, sort_order'
 
 function useKey() {
   const { claims } = useAuth()
