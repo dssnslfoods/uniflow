@@ -112,3 +112,16 @@ export function useSupportSession() {
     },
   })
 }
+
+// Demo data for trials/testing (app.seed_demo). Platform admins may target any shop.
+export function useSeedDemo() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (tenantId: string | null) => {
+      const { data, error } = await rpc().rpc('seed_demo', { p_tenant: tenantId })
+      if (error) throw error
+      return data as { skipped: boolean; orders?: number; jobs?: number }
+    },
+    onSettled: () => qc.invalidateQueries(),
+  })
+}

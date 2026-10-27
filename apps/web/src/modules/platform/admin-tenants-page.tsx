@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from '@tanstack/react-router'
-import { Building2, LogIn, LogOut, Search, ShieldCheck } from 'lucide-react'
+import { Building2, Database, LogIn, LogOut, Search, ShieldCheck } from 'lucide-react'
 import { useAuth } from '@/app/auth'
 import { errorMessage } from '@/lib/errors'
 import { cn } from '@/lib/utils'
@@ -10,7 +10,7 @@ import { Input, Select } from '@/shared/ui/input'
 import { EmptyState, ErrorNote, ListSkeleton, PageHeader } from '@/shared/ui/page'
 import { useToast } from '@/shared/ui/toast'
 import { formatDate } from '../orders/format'
-import { useAdminTenants, useAdminUpdateTenant, useSupportSession, type AdminTenant } from './api'
+import { useAdminTenants, useAdminUpdateTenant, useSeedDemo, useSupportSession, type AdminTenant } from './api'
 
 const plans = ['trial', 'starter', 'pro', 'business']
 const statuses: AdminTenant['status'][] = ['trial', 'active', 'suspended', 'closed']
@@ -24,6 +24,16 @@ export function AdminTenantsPage() {
   const tenants = useAdminTenants(!!claims?.platform_admin)
   const update = useAdminUpdateTenant()
   const support = useSupportSession()
+  const seed = useSeedDemo()
+
+  function seedDemo(x: AdminTenant) {
+    if (!window.confirm(t('admin.seedConfirm', { name: x.name }))) return
+    seed.mutate(x.tenant_id, {
+      onSuccess: (r) =>
+        toast({ tone: 'success', message: r.skipped ? t('admin.seedSkipped') : t('admin.seeded', { orders: r.orders, jobs: r.jobs }) }),
+      onError: (e) => toast({ tone: 'error', message: errorMessage(e) }),
+    })
+  }
   const [query, setQuery] = useState('')
 
   const rows = useMemo(() => {
@@ -145,7 +155,11 @@ export function AdminTenantsPage() {
                   <td className="tabular px-4 py-3 text-right">{x.machines}</td>
                   <td className="tabular px-4 py-3 text-right">{x.open_orders}</td>
                   <td className="tabular px-4 py-3 text-right">{x.active_jobs}</td>
-                  <td className="px-4 py-3 text-right">
+                  <td className="whitespace-nowrap px-4 py-3 text-right">
+                    <Button variant="ghost" size="sm" onClick={() => seedDemo(x)} loading={seed.isPending && seed.variables === x.tenant_id} title={t('admin.seed')}>
+                      <Database className="size-3.5" aria-hidden />
+                      <span className="sr-only xl:not-sr-only">{t('admin.seed')}</span>
+                    </Button>
                     {x.supporting ? (
                       <Button variant="ghost" size="sm" onClick={() => leave(x)} loading={support.isPending}>
                         <LogOut className="size-3.5" aria-hidden />

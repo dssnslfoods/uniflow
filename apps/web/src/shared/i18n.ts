@@ -270,6 +270,10 @@ const th = {
     auditNote: 'การเข้าโรงพิมพ์ในโหมดช่วยเหลือถูกบันทึกใน Audit log และโรงพิมพ์นั้นเห็นว่าคุณเป็นสมาชิกชั่วคราว',
     supportBanner: 'โหมดช่วยเหลือ: คุณกำลังดูข้อมูลของ {{name}}',
     console: 'คอนโซลผู้ดูแลแพลตฟอร์ม',
+    seed: 'ข้อมูลตัวอย่าง',
+    seedConfirm: 'ใส่ข้อมูลตัวอย่าง (เครื่องจักร ลูกค้า Template และ PO 6 ใบในทุกสถานะ) ให้ {{name}}?',
+    seeded: 'ใส่ข้อมูลตัวอย่างแล้ว: PO {{orders}} ใบ, Job {{jobs}} งาน',
+    seedSkipped: 'โรงพิมพ์นี้มีข้อมูลตัวอย่างอยู่แล้ว',
   },
   board: {
     title: 'บอร์ดงาน',
@@ -645,6 +649,10 @@ const en: typeof th = {
     auditNote: 'Support access is recorded in the audit log and the shop sees you as a temporary member',
     supportBanner: 'Support mode: you are viewing {{name}}',
     console: 'Platform console',
+    seed: 'Demo data',
+    seedConfirm: 'Load demo data (machines, customers, templates and 6 POs at every stage) into {{name}}?',
+    seeded: 'Demo data loaded: {{orders}} POs, {{jobs}} jobs',
+    seedSkipped: 'This shop already has demo data',
   },
   board: {
     title: 'Board',
