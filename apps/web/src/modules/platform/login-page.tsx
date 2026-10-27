@@ -54,7 +54,8 @@ export function LoginPage() {
               id={id}
               type="password"
               autoComplete={mode === 'signin' ? 'current-password' : 'new-password'}
-              minLength={8}
+              // Sign-in: the server decides. Sign-up: match Supabase minimum_password_length (6).
+              minLength={mode === 'signup' ? 6 : undefined}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
