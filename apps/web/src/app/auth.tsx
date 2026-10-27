@@ -8,8 +8,8 @@ export type AuthState = {
   session: Session | null
   claims: Claims | null
   hasRole: (...roles: Role[]) => boolean
-  // Re-issue the JWT so the hook picks up a new/switched tenant.
-  refresh: () => Promise<void>
+  // Re-issue the JWT so the hook picks up a new/switched tenant; returns the new claims.
+  refresh: () => Promise<Claims | null>
   signOut: () => Promise<void>
 }
 
@@ -38,6 +38,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       refresh: async () => {
         const { data } = await supabase.auth.refreshSession()
         setSession(data.session)
+        return decodeClaims(data.session?.access_token)
       },
       signOut: async () => {
         await supabase.auth.signOut()

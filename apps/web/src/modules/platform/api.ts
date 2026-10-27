@@ -28,11 +28,15 @@ export function useCreateTenant() {
       return data as string
     },
     onSuccess: async () => {
-      await refresh()
+      const claims = await refresh()
       qc.clear()
+      if (!claims?.tenant_id) throw hookMissing()
     },
   })
 }
+
+// The tenant exists but the new token has no tenant_id: the access token hook is not enabled.
+export const hookMissing = () => Object.assign(new Error('auth.hook_missing'), { details: 'auth.hook_missing' })
 
 export function useSwitchTenant() {
   const { refresh } = useAuth()

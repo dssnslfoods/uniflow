@@ -36,6 +36,7 @@ const th = {
     subtitle: 'สร้างโรงพิมพ์ของคุณ ระบบจะเตรียมปฏิทินกะทำงานและคลังสินค้าเริ่มต้นให้',
     shopName: 'ชื่อโรงพิมพ์',
     create: 'สร้างโรงพิมพ์',
+    hookTitle: 'ยังเข้าโรงพิมพ์ไม่ได้',
   },
   tenant: { switch: 'สลับโรงพิมพ์', create: 'สร้างโรงพิมพ์ใหม่' },
   machines: {
@@ -276,7 +277,13 @@ const th = {
   errors: {
     unknown: 'เกิดข้อผิดพลาด ลองใหม่อีกครั้ง',
     duplicate: 'ข้อมูลนี้มีอยู่แล้ว (รหัสซ้ำ)',
-    auth: { required: 'กรุณาเข้าสู่ระบบ', forbidden: 'คุณไม่มีสิทธิ์ทำรายการนี้', no_tenant: 'ยังไม่ได้เลือกโรงพิมพ์' },
+    auth: {
+      required: 'กรุณาเข้าสู่ระบบ',
+      forbidden: 'คุณไม่มีสิทธิ์ทำรายการนี้',
+      no_tenant: 'ยังไม่ได้เลือกโรงพิมพ์',
+      hook_missing:
+        'บัญชีนี้เป็นสมาชิกโรงพิมพ์แล้ว แต่ token ยังไม่มีข้อมูลโรงพิมพ์ — ผู้ดูแลต้องเปิด Custom Access Token Hook (public.custom_access_token_hook) ใน Supabase Dashboard → Authentication → Hooks แล้วออกจากระบบและเข้าใหม่',
+    },
     plan: {
       limit_reached: 'ถึงขีดจำกัดของแพ็กเกจแล้ว กรุณาอัปเกรด',
       coverage_incomplete: 'ยังจับคู่รายการ PO ไม่ครบ',
@@ -357,6 +364,7 @@ const en: typeof th = {
     subtitle: 'Create your print shop. A default shift calendar and warehouse are set up for you.',
     shopName: 'Print shop name',
     create: 'Create print shop',
+    hookTitle: "Can't open your print shop yet",
   },
   tenant: { switch: 'Switch shop', create: 'New print shop' },
   machines: {
@@ -597,7 +605,13 @@ const en: typeof th = {
   errors: {
     unknown: 'Something went wrong. Please try again.',
     duplicate: 'This already exists (duplicate code)',
-    auth: { required: 'Please sign in', forbidden: "You don't have permission to do this", no_tenant: 'No print shop selected' },
+    auth: {
+      required: 'Please sign in',
+      forbidden: "You don't have permission to do this",
+      no_tenant: 'No print shop selected',
+      hook_missing:
+        "This account already belongs to a print shop, but the token carries no shop — an admin must enable the Custom Access Token Hook (public.custom_access_token_hook) in Supabase Dashboard → Authentication → Hooks, then sign out and back in.",
+    },
     plan: {
       limit_reached: 'Plan limit reached. Please upgrade.',
       coverage_incomplete: 'Some PO quantities are not matched yet',
