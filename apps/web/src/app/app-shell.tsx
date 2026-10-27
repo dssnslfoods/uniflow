@@ -16,7 +16,7 @@ const navGroups: { key?: string; items: NavItem[] }[] = [
   {
     items: [
       { to: '/dashboard', key: 'dashboard', Icon: Gauge, soon: true },
-      { to: '/board', key: 'board', Icon: KanbanSquare, soon: true },
+      { to: '/board', key: 'board', Icon: KanbanSquare },
       { to: '/orders', key: 'orders', Icon: FileText },
       { to: '/approvals', key: 'approvals', Icon: CheckCheck },
     ],

@@ -116,8 +116,12 @@ function useInvalidatePlan() {
   const coverageKey = useTenantKey('coverage')
   const approvalsKey = useTenantKey('approvals')
   const ordersKey = useTenantKey('sales_orders')
+  const boardKey = useTenantKey('board')
+  const loadKey = useTenantKey('machine-load')
   return () =>
-    Promise.all([jobsKey, coverageKey, approvalsKey, ordersKey].map((queryKey) => qc.invalidateQueries({ queryKey })))
+    Promise.all(
+      [jobsKey, coverageKey, approvalsKey, ordersKey, boardKey, loadKey].map((queryKey) => qc.invalidateQueries({ queryKey })),
+    )
 }
 
 export function useCreateJob() {
@@ -238,5 +242,113 @@ export function useProfileNames(ids: string[]) {
       if (error) throw error
       return new Map((data as { id: string; full_name: string | null }[]).map((p) => [p.id, p.full_name ?? '—']))
     },
+  })
+}
+
+// Release & board (Sprint 4) ------------------------------------------------------
+
+export const useReleaseJobs = () => usePlanCommand<{ p_jobs: string[] }>('release_jobs')
+
+export type StepStatus = 'pending' | 'ready' | 'in_progress' | 'paused' | 'done' | 'skipped' | 'failed'
+
+export type BoardStep = {
+  id: string
+  job_id: string
+  seq: number
+  process_id: string
+  step_type: StepType
+  machine_id: string | null
+  status: StepStatus
+  queue_position: number | null
+  planned_start: string | null
+  planned_end: string | null
+  est_minutes: number | null
+  planned_qty: number
+  version: number
+  job: {
+    id: string
+    job_no: string
+    title: string
+    due_date: string | null
+    is_at_risk: boolean
+    order: { doc_no: string; customer_po_no: string; customer: { name: string } | null } | null
+  }
+}
+
+export type ApprovedJob = { id: string; job_no: string; title: string; due_date: string | null; order: { doc_no: string } | null }
+
+export function useBoard() {
+  const key = useTenantKey('board')
+  return useQuery({
+    queryKey: key,
+    refetchInterval: 30_000,   // until realtime broadcast lands (design §6.8)
+    queryFn: async () => {
+      const [steps, approved] = await Promise.all([
+        db()
+          .from('job_steps')
+          .select(
+            'id, job_id, seq, process_id, step_type, machine_id, status, queue_position, planned_start, planned_end, est_minutes, planned_qty, version, ' +
+              'job:jobs!inner(id, job_no, title, due_date, is_at_risk, status, order:sales_orders(doc_no, customer_po_no, customer:customers(name)))',
+          )
+          .eq('job.status', 'in_production')
+          .in('status', ['pending', 'ready', 'in_progress', 'paused'])
+          .order('queue_position', { nullsFirst: false })
+          .order('planned_start'),
+        db().from('jobs').select('id, job_no, title, due_date, order:sales_orders(doc_no)').eq('status', 'approved').order('due_date'),
+      ])
+      if (steps.error) throw steps.error
+      if (approved.error) throw approved.error
+      return { steps: steps.data as unknown as BoardStep[], approved: approved.data as unknown as ApprovedJob[] }
+    },
+  })
+}
+
+export type LoadRow = { machine_id: string; day: string; available_min: number; planned_min: number }
+
+export function useMachineLoad(days = 7) {
+  const key = useTenantKey('machine-load', days)
+  return useQuery({
+    queryKey: key,
+    refetchInterval: 30_000,
+    queryFn: async () => {
+      const today = new Date().toISOString().slice(0, 10)
+      const { data, error } = await rpc().rpc('machine_load', { p_from: today, p_days: days })
+      if (error) throw error
+      return data as LoadRow[]
+    },
+  })
+}
+
+export type MoveResult = { version: number; load_pct: number | null; day: string | null; late_jobs: string[] }
+
+export function useMoveStep() {
+  const qc = useQueryClient()
+  const boardKey = useTenantKey('board')
+  const loadKey = useTenantKey('machine-load')
+  return useMutation({
+    mutationFn: async (args: { step: string; machine: string | null; before: string | null; version: number }) => {
+      const { data, error } = await rpc().rpc('move_step', {
+        p_step: args.step,
+        p_machine: args.machine,
+        p_before: args.before,
+        p_version: args.version,
+      })
+      if (error) throw error
+      return data as MoveResult
+    },
+    onSettled: () => Promise.all([qc.invalidateQueries({ queryKey: boardKey }), qc.invalidateQueries({ queryKey: loadKey })]),
+  })
+}
+
+export function useReschedule() {
+  const qc = useQueryClient()
+  const boardKey = useTenantKey('board')
+  const loadKey = useTenantKey('machine-load')
+  return useMutation({
+    mutationFn: async () => {
+      const { error } = await rpc().rpc('reschedule')
+      if (error) throw error
+    },
+    onSettled: () => Promise.all([qc.invalidateQueries({ queryKey: boardKey }), qc.invalidateQueries({ queryKey: loadKey })]),
   })
 }

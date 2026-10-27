@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState, type ButtonHTMLAttributes, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from '@tanstack/react-router'
-import { AlertTriangle, ArrowDown, ArrowLeft, ArrowUp, CheckCircle2, GitFork, Lock, Plus, Send, Trash2, X } from 'lucide-react'
+import { AlertTriangle, ArrowDown, ArrowLeft, ArrowUp, CheckCircle2, GitFork, Lock, Play, Plus, Send, Trash2, X } from 'lucide-react'
 import { useAuth } from '@/app/auth'
 import { errorMessage } from '@/lib/errors'
 import { cn } from '@/lib/utils'
@@ -24,6 +24,7 @@ import {
   useCoverage,
   useCreateJob,
   useOrderJobs,
+  useReleaseJobs,
   useSaveJob,
   useSubmitPlan,
   type Approval,
@@ -66,6 +67,7 @@ export function PlanPage({ orderId }: { orderId: string }) {
   const jobIds = useMemo(() => (jobs.data ?? []).map((j) => j.id), [jobs.data])
   const approvals = useApprovals(jobIds)
   const submit = useSubmitPlan()
+  const release = useReleaseJobs()
   const [creating, setCreating] = useState(false)
   const [dirty, setDirty] = useState<Set<string>>(new Set())
   const canPlan = hasRole('admin', 'manager', 'supervisor')
@@ -89,6 +91,17 @@ export function PlanPage({ orderId }: { orderId: string }) {
   const live = (jobs.data ?? []).filter((j) => j.status !== 'cancelled')
   const planning = live.filter((j) => j.status === 'planning')
   const covered = lines.length > 0 && lines.every((l) => Number(l.remaining_qty) === 0)
+  const approved = live.filter((j) => j.status === 'approved')
+
+  function onRelease(ids: string[]) {
+    release.mutate(
+      { p_jobs: ids },
+      {
+        onSuccess: (n) => toast({ tone: 'success', message: t('board.released', { n }) }),
+        onError: (e) => toast({ tone: 'error', message: errorMessage(e) }),
+      },
+    )
+  }
 
   const blocker = !planning.length
     ? t('plan.blockNothing')
@@ -121,6 +134,12 @@ export function PlanPage({ orderId }: { orderId: string }) {
           <p className="text-sm text-muted">PO {so.customer_po_no} · {t('orders.dueDate')} {formatDate(so.due_date)}</p>
         </div>
         <SoStatusPill status={so.status} />
+        {canPlan && approved.length > 0 && (
+          <Button className="ml-auto" onClick={() => onRelease(approved.map((j) => j.id))} loading={release.isPending}>
+            <Play className="size-4" aria-hidden />
+            {t('board.release')} ({approved.length})
+          </Button>
+        )}
       </div>
 
       <div className="grid gap-5 lg:grid-cols-[320px_minmax(0,1fr)]">

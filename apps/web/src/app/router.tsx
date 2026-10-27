@@ -18,6 +18,7 @@ import { OrdersPage } from '@/modules/orders/orders-page'
 import { NewOrderPage, OrderEditorPage } from '@/modules/orders/order-editor-page'
 import { PlanPage } from '@/modules/production/plan-page'
 import { ApprovalsPage } from '@/modules/production/approvals-page'
+import { BoardPage } from '@/modules/production/board-page'
 import { AdminTenantsPage } from '@/modules/platform/admin-tenants-page'
 
 type Ctx = { auth: AuthState }
@@ -108,6 +109,7 @@ const routeTree = rootRoute.addChildren([
     orderRoute,
     planRoute,
     page('/approvals', ApprovalsPage),
+    page('/board', BoardPage),
     page('/admin', AdminTenantsPage),
     machinesRoute,
     page('/processes', ProcessesPage),
