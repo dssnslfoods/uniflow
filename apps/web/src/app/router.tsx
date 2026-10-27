@@ -18,6 +18,7 @@ import { OrdersPage } from '@/modules/orders/orders-page'
 import { NewOrderPage, OrderEditorPage } from '@/modules/orders/order-editor-page'
 import { PlanPage } from '@/modules/production/plan-page'
 import { ApprovalsPage } from '@/modules/production/approvals-page'
+import { AdminTenantsPage } from '@/modules/platform/admin-tenants-page'
 
 type Ctx = { auth: AuthState }
 
@@ -45,9 +46,16 @@ const onboardingRoute = createRoute({
 const appRoute = createRoute({
   getParentRoute: () => rootRoute,
   id: 'app',
-  beforeLoad: ({ context }) => {
+  beforeLoad: ({ context, location }) => {
     if (!context.auth.session) throw redirect({ to: '/login' })
-    if (!context.auth.claims?.tenant_id) throw redirect({ to: '/onboarding' })
+    if (!context.auth.claims?.tenant_id) {
+      // Platform admins work without a tenant; only the admin console is reachable then.
+      if (context.auth.claims?.platform_admin) {
+        if (location.pathname !== '/admin') throw redirect({ to: '/admin' })
+      } else {
+        throw redirect({ to: '/onboarding' })
+      }
+    }
   },
   component: AppShell,
 })
@@ -100,6 +108,7 @@ const routeTree = rootRoute.addChildren([
     orderRoute,
     planRoute,
     page('/approvals', ApprovalsPage),
+    page('/admin', AdminTenantsPage),
     machinesRoute,
     page('/processes', ProcessesPage),
     page('/customers', CustomersPage),

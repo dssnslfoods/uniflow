@@ -1,9 +1,9 @@
 import { useState, type ButtonHTMLAttributes } from 'react'
 import { Link, Outlet } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import { CheckCheck, Factory, FileText, Gauge, KanbanSquare, Languages, Layers, LogOut, Moon, Sun, Users, Workflow } from 'lucide-react'
+import { Building2, CheckCheck, Factory, FileText, Gauge, KanbanSquare, Languages, Layers, LifeBuoy, LogOut, Moon, Sun, Users, Workflow } from 'lucide-react'
 import { useAuth } from './auth'
-import { useMyTenants, useSwitchTenant } from '@/modules/platform/api'
+import { useMyTenants, useSupportSession, useSwitchTenant } from '@/modules/platform/api'
 import { usePendingApprovals } from '@/modules/production/api'
 import { setLanguage } from '@/shared/i18n'
 import { useToast } from '@/shared/ui/toast'
@@ -53,6 +53,14 @@ export function AppShell() {
   const current = tenants.data?.find((x) => x.tenant_id === auth.claims?.tenant_id)
   const pending = usePendingApprovals(auth.hasRole('manager'))
   const badges: Record<string, number> = { approvals: pending.data?.length ?? 0 }
+  const support = useSupportSession()
+  const isPlatformAdmin = !!auth.claims?.platform_admin
+  const hasTenant = !!auth.claims?.tenant_id
+  // Platform admins without a tenant see only the console; with one, the console is added at the end.
+  const groups = [
+    ...(hasTenant ? navGroups : []),
+    ...(isPlatformAdmin ? [{ key: 'platform', items: [{ to: '/admin', key: 'admin', Icon: Building2 }] }] : []),
+  ]
 
   return (
     <div className="flex min-h-full flex-col md:flex-row">
@@ -66,7 +74,7 @@ export function AppShell() {
         </div>
 
         <nav className="flex gap-1 overflow-x-auto md:flex-col">
-          {navGroups.map((group, gi) => (
+          {groups.map((group, gi) => (
             <div key={gi} className="flex gap-1 md:flex-col">
               {group.key && (
                 <div className="hidden px-2.5 pb-1 pt-4 text-[11px] font-medium uppercase tracking-wide text-muted md:block">
@@ -140,6 +148,18 @@ export function AppShell() {
       </aside>
 
       <main className="min-w-0 flex-1 px-4 py-6 md:px-8">
+        {current?.is_support && (
+          <div className="mb-5 flex flex-wrap items-center gap-3 rounded-lg border border-status-paused/40 bg-status-paused/10 px-4 py-2.5 text-sm text-status-paused">
+            <LifeBuoy className="size-4" aria-hidden />
+            <span className="flex-1">{t('admin.supportBanner', { name: current.name })}</span>
+            <button
+              className="font-semibold underline-offset-2 hover:underline"
+              onClick={() => support.mutate({ tenantId: current.tenant_id, leave: true })}
+            >
+              {t('admin.leave')}
+            </button>
+          </div>
+        )}
         <Outlet />
       </main>
     </div>
