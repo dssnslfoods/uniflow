@@ -1,0 +1,7 @@
+{
+  "projects": {
+    "default": "uniflow-staging",
+    "staging": "uniflow-staging",
+    "production": "uniflow-prod"
+  }
+}

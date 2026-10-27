@@ -1,0 +1,16 @@
+{
+  "name": "uniflow",
+  "private": true,
+  "packageManager": "pnpm@10.33.2",
+  "scripts": {
+    "dev": "pnpm --filter @uniflow/web dev",
+    "build": "pnpm --filter @uniflow/web build",
+    "typecheck": "pnpm --filter @uniflow/web typecheck",
+    "db:start": "supabase start",
+    "db:reset": "supabase db reset",
+    "db:test": "supabase test db",
+    "db:test:local": "bash scripts/db-test-local.sh",
+    "db:types": "supabase gen types typescript --local --schema app,api > apps/web/src/lib/database.types.ts",
+    "deploy:hosting": "pnpm build && firebase deploy --only hosting"
+  }
+}
