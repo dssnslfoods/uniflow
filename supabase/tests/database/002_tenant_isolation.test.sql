@@ -38,6 +38,8 @@ begin
   perform api.release_jobs(array(select id from app.jobs));
   perform api.start_step(id) from app.job_steps where status = 'ready';
   perform api.start_downtime(id, 'other', 30) from app.machines;
+  insert into app.machine_operators (machine_id, membership_id)
+    select v_mach, id from app.memberships where user_id = p_admin;
 end $$;
 
 create temp table t_ctx as
@@ -49,6 +51,9 @@ select tests.seed_masters(tests.user('admin@a.test'));
 reset role;
 select tests.seed_masters(tests.user('admin@b.test'));
 reset role;
+-- Notifications are written by triggers for other people; add one per member directly.
+insert into app.notifications (tenant_id, user_id, kind)
+select m.tenant_id, m.user_id, 'test' from app.memberships m;
 
 -- Every app table has RLS on ---------------------------------------------------
 select is_empty($$

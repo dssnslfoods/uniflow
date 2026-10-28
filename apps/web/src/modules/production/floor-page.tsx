@@ -10,6 +10,7 @@ import { ErrorNote, ListSkeleton } from '@/shared/ui/page'
 import { useToast } from '@/shared/ui/toast'
 import { useMachineProcesses, useMachines } from '../masters/machines/api'
 import { useProcesses } from '../masters/processes/api'
+import { useMembers } from '../settings/api'
 import {
   formatMinutes,
   runMinutes,
@@ -50,7 +51,8 @@ function useNow() {
 // Mobile-first screen for operators (design §8.0: big targets, ≤ 2 taps per action).
 export function FloorPage({ focusStepId }: { focusStepId?: string }) {
   const { t } = useTranslation()
-  const { hasRole } = useAuth()
+  const { hasRole, session } = useAuth()
+  const members = useMembers()
   const toast = useToast()
   const board = useBoard()
   const machines = useMachines()
@@ -84,7 +86,10 @@ export function FloorPage({ focusStepId }: { focusStepId?: string }) {
 
   const processName = useMemo(() => new Map((processes.data ?? []).map((p) => [p.id, p.name])), [processes.data])
   const hasMachine = useMemo(() => new Set((links.data ?? []).map((l) => l.process_id)), [links.data])
-  const activeMachines = (machines.data ?? []).filter((m) => m.status !== 'inactive')
+  // Staff assigned to machines see just those; supervisors and up see every machine.
+  const myMachines = members.data?.find((m) => m.user_id === session?.user.id)?.machine_ids ?? []
+  const onlyMine = !hasRole('admin', 'manager', 'supervisor') && myMachines.length > 0
+  const activeMachines = (machines.data ?? []).filter((m) => m.status !== 'inactive' && (!onlyMine || myMachines.includes(m.id)))
 
   const mine = steps
     .filter((s) =>

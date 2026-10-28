@@ -22,6 +22,8 @@ import { BoardPage } from '@/modules/production/board-page'
 import { FloorPage } from '@/modules/production/floor-page'
 import { JobPage, JobTicketPage } from '@/modules/production/job-page'
 import { AdminTenantsPage } from '@/modules/platform/admin-tenants-page'
+import { SettingsPage } from '@/modules/settings/settings-page'
+import { DashboardPage } from '@/modules/dashboard/dashboard-page'
 
 type Ctx = { auth: AuthState }
 
@@ -67,7 +69,7 @@ const indexRoute = createRoute({
   getParentRoute: () => appRoute,
   path: '/',
   beforeLoad: () => {
-    throw redirect({ to: '/orders' })
+    throw redirect({ to: '/dashboard' })
   },
 })
 
@@ -144,6 +146,8 @@ const routeTree = rootRoute.addChildren([
     jobRoute,
     jobTicketRoute,
     page('/admin', AdminTenantsPage),
+    page('/settings', SettingsPage),
+    page('/dashboard', DashboardPage),
     machinesRoute,
     page('/processes', ProcessesPage),
     page('/customers', CustomersPage),

@@ -1,10 +1,11 @@
 import { useState, type ButtonHTMLAttributes } from 'react'
 import { Link, Outlet } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import { Building2, CheckCheck, Factory, FileText, Gauge, Hammer, KanbanSquare, Languages, Layers, LifeBuoy, LogOut, Moon, Sun, Users, Workflow } from 'lucide-react'
+import { Building2, CheckCheck, Settings, Factory, FileText, Gauge, Hammer, KanbanSquare, Languages, Layers, LifeBuoy, LogOut, Moon, Sun, Users, Workflow } from 'lucide-react'
 import { useAuth } from './auth'
 import { useMyTenants, useSupportSession, useSwitchTenant } from '@/modules/platform/api'
 import { usePendingApprovals } from '@/modules/production/api'
+import { NotificationBell } from '@/modules/notifications/notification-bell'
 import { setLanguage } from '@/shared/i18n'
 import { useToast } from '@/shared/ui/toast'
 import { errorMessage } from '@/lib/errors'
@@ -15,7 +16,7 @@ type NavItem = { to: string; key: string; Icon: typeof Factory; soon?: boolean }
 const navGroups: { key?: string; items: NavItem[] }[] = [
   {
     items: [
-      { to: '/dashboard', key: 'dashboard', Icon: Gauge, soon: true },
+      { to: '/dashboard', key: 'dashboard', Icon: Gauge },
       { to: '/board', key: 'board', Icon: KanbanSquare },
       { to: '/floor', key: 'floor', Icon: Hammer },
       { to: '/orders', key: 'orders', Icon: FileText },
@@ -29,6 +30,7 @@ const navGroups: { key?: string; items: NavItem[] }[] = [
       { to: '/machines', key: 'machines', Icon: Factory },
       { to: '/processes', key: 'processes', Icon: Workflow },
       { to: '/templates', key: 'templates', Icon: Layers },
+      { to: '/settings', key: 'settings_page', Icon: Settings },
     ],
   },
 ]
@@ -68,10 +70,11 @@ export function AppShell() {
       <aside className="flex shrink-0 flex-col gap-1 print:hidden border-b border-border bg-surface px-3 py-3 md:sticky md:top-0 md:h-screen md:w-60 md:border-b-0 md:border-r">
         <div className="flex items-center gap-2 px-2 pb-3">
           <div className="grid size-8 place-items-center rounded-lg bg-brand text-sm font-bold text-brand-fg">U</div>
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <div className="font-semibold leading-tight">{t('app.name')}</div>
             <div className="truncate text-xs text-muted">{current?.name ?? '—'}</div>
           </div>
+          {hasTenant && <NotificationBell />}
         </div>
 
         <nav className="flex gap-1 overflow-x-auto md:flex-col">
