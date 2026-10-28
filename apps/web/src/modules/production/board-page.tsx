@@ -17,7 +17,7 @@ import {
 } from '@dnd-kit/core'
 import { SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { AlertTriangle, CalendarClock, Inbox, KanbanSquare, Play, RefreshCw, Search, Users, Wrench } from 'lucide-react'
+import { AlertTriangle, ArrowLeftRight, CalendarClock, Inbox, KanbanSquare, Play, RefreshCw, Search, Users, Wrench } from 'lucide-react'
 import { useAuth } from '@/app/auth'
 import { errorMessage } from '@/lib/errors'
 import { cn } from '@/lib/utils'
@@ -29,13 +29,16 @@ import { useMachineProcesses, useMachines, type Machine } from '../masters/machi
 import { useProcesses } from '../masters/processes/api'
 import { stepTypeStyle } from '../masters/processes/step-type'
 import { formatDate } from '../orders/format'
+import { Timeline } from './timeline'
 import {
   formatMinutes,
   useBoard,
   useMachineLoad,
   useMoveStep,
   useReleaseJobs,
+  useOpenDowntimes,
   useReschedule,
+  useSuggestMachines,
   type BoardStep,
   type LoadRow,
 } from './api'
@@ -112,6 +115,22 @@ export function BoardPage() {
     if (!activeId && !move.isPending) setColumns(serverColumns)
   }, [serverColumns, activeId, move.isPending])
 
+  const downtimes = useOpenDowntimes()
+  const [view, setView] = useState<'board' | 'timeline'>(() => {
+    try {
+      return localStorage.getItem('uniflow.board.view') === 'timeline' ? 'timeline' : 'board'
+    } catch {
+      return 'board'
+    }
+  })
+  const pickView = (v: 'board' | 'timeline') => {
+    setView(v)
+    try {
+      localStorage.setItem('uniflow.board.view', v)
+    } catch {
+      // storage unavailable — the choice applies for this visit only
+    }
+  }
   const [query, setQuery] = useState('')
   const [onlyRisk, setOnlyRisk] = useState(false)
   const [focusJob, setFocusJob] = useState<string | null>(null)
@@ -253,6 +272,14 @@ export function BoardPage() {
             <AlertTriangle className="size-4 text-status-risk" aria-hidden />
             {t('board.onlyRisk')}
           </label>
+          <div className="flex rounded-lg border border-border bg-surface p-0.5" role="tablist">
+            {(['board', 'timeline'] as const).map((v) => (
+              <button key={v} role="tab" aria-selected={view === v} onClick={() => pickView(v)}
+                className={cn('rounded-md px-3 py-1.5 text-sm', view === v ? 'bg-surface-2 font-medium' : 'text-muted hover:text-fg')}>
+                {v === 'board' ? t('board.viewBoard') : t('board.viewTimeline')}
+              </button>
+            ))}
+          </div>
           <Button variant="secondary" onClick={() => reschedule.mutate()} loading={reschedule.isPending} title={t('board.refresh')}>
             <RefreshCw className="size-4" aria-hidden />
             <span className="sr-only sm:not-sr-only">{t('board.refresh')}</span>
@@ -291,6 +318,14 @@ export function BoardPage() {
 
       {steps.length === 0 && approved.length === 0 ? (
         <EmptyState Icon={KanbanSquare} title={t('board.empty')} hint={t('board.emptyHint')} />
+      ) : view === 'timeline' ? (
+        <Timeline
+          steps={steps}
+          machines={visibleMachines}
+          processName={processName}
+          downMachines={new Set((downtimes.data ?? []).map((d) => d.machine_id))}
+          matches={matches}
+        />
       ) : (
         <DndContext sensors={sensors} collisionDetection={closestCorners} onDragStart={onDragStart} onDragOver={onDragOver} onDragEnd={onDragEnd} onDragCancel={() => { setActiveId(null); setColumns(serverColumns) }}>
           <div className="-mx-4 flex min-h-0 flex-1 gap-3 overflow-x-auto px-4 pb-4 md:-mx-8 md:px-8">
@@ -323,9 +358,21 @@ export function BoardPage() {
                         key={id}
                         step={s}
                         processName={processName.get(s.process_id) ?? '—'}
-                        draggable={canMove && (s.status === 'pending' || s.status === 'ready') && col.id !== 'outsource' && col.id !== 'manual'}
+                        draggable={canMove && s.job.status === 'in_production' && (s.status === 'pending' || s.status === 'ready') && col.id !== 'outsource' && col.id !== 'manual'}
                         dimmed={!matches(s)}
                         onFocusJob={() => setFocusJob((f) => (f === s.job_id ? null : s.job_id))}
+                        onMoveTo={
+                          canMove && s.job.status === 'in_production' && (s.status === 'pending' || s.status === 'ready') && col.id !== 'outsource' && col.id !== 'manual'
+                            ? (machineId) =>
+                                move.mutate(
+                                  { step: s.id, machine: machineId, before: null, version: s.version },
+                                  {
+                                    onSuccess: () => toast({ tone: 'success', message: t('board.moved') }),
+                                    onError: (err) => toast({ tone: 'error', message: errorMessage(err) }),
+                                  },
+                                )
+                            : undefined
+                        }
                       />
                     )
                   })}
@@ -417,7 +464,14 @@ function Column({ id, machine, ids, valid, dragging, backlog, load, preview, act
   )
 }
 
-type CardProps = { step: BoardStep; processName: string; dimmed?: boolean; lifted?: boolean; onFocusJob?: () => void }
+type CardProps = {
+  step: BoardStep
+  processName: string
+  dimmed?: boolean
+  lifted?: boolean
+  onFocusJob?: () => void
+  onMoveTo?: (machineId: string) => void
+}
 
 function SortableCard({ draggable, ...props }: CardProps & { draggable: boolean }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: props.step.id, disabled: !draggable })
@@ -453,7 +507,7 @@ const statusTone: Record<string, string> = {
 }
 
 // Card = one job step (design §8.1): job colour stripe, stage, process, job, qty, time window, due date, risk.
-function Card({ step, processName, dimmed, lifted, onFocusJob }: CardProps) {
+function Card({ step, processName, dimmed, lifted, onFocusJob, onMoveTo }: CardProps) {
   const { t } = useTranslation()
   const style = stepTypeStyle[step.step_type]
   const window = fmtWindow(step.planned_start, step.planned_end)
@@ -478,7 +532,15 @@ function Card({ step, processName, dimmed, lifted, onFocusJob }: CardProps) {
         </button>
         <span>· {t('board.stage', { n: step.seq })}</span>
         {step.job.is_at_risk && <AlertTriangle className="ml-auto size-3.5 text-status-risk" aria-label={t('board.atRisk')} />}
+        {onMoveTo && <SuggestButton stepId={step.id} currentMachine={step.machine_id} onPick={onMoveTo} className={step.job.is_at_risk ? '' : 'ml-auto'} />}
       </div>
+      {(step.job.status !== 'in_production' || step.is_rework) && (
+        <div className="mt-1 flex flex-wrap gap-1">
+          {step.job.status === 'pending_approval' && <span className="rounded bg-status-paused/10 px-1.5 text-[10px] text-status-paused">{t('board.reapproval')}</span>}
+          {step.job.status === 'on_hold' && <span className="rounded bg-status-risk/10 px-1.5 text-[10px] text-status-risk">{t('jobStatus.on_hold')}</span>}
+          {step.is_rework && <span className="rounded bg-status-paused/10 px-1.5 text-[10px] text-status-paused">{t('plan.rework')}</span>}
+        </div>
+      )}
       <div className="mt-1 flex items-center gap-1.5">
         <span className={cn('grid size-5 shrink-0 place-items-center rounded', style.cls)}>
           <style.Icon className="size-3" aria-hidden />
@@ -517,5 +579,43 @@ function Card({ step, processName, dimmed, lifted, onFocusJob }: CardProps) {
         </div>
       )}
     </article>
+  )
+}
+
+// Alternative machines (SRS §7.4): capable machines ordered by when the step would finish there.
+function SuggestButton({ stepId, currentMachine, onPick, className }: { stepId: string; currentMachine: string | null; onPick: (machineId: string) => void; className?: string }) {
+  const { t } = useTranslation()
+  const [open, setOpen] = useState(false)
+  const suggestions = useSuggestMachines(open ? stepId : null)
+  const time = new Intl.DateTimeFormat(undefined, { weekday: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+
+  return (
+    <span className={cn('relative', className)} onPointerDown={(e) => e.stopPropagation()}>
+      <button type="button" aria-label={t('board.suggest')} title={t('board.suggest')} className="rounded p-0.5 hover:bg-surface-2 hover:text-brand" onClick={() => setOpen((o) => !o)}>
+        <ArrowLeftRight className="size-3.5" />
+      </button>
+      {open && (
+        <div className="absolute right-0 top-6 z-30 w-64 rounded-lg border border-border bg-surface p-1 text-[12px] text-fg shadow-xl">
+          <p className="px-2 py-1 text-[11px] font-medium text-muted">{t('board.suggest')}</p>
+          {suggestions.isLoading && <p className="px-2 py-2 text-muted">…</p>}
+          {suggestions.data?.length === 0 && <p className="px-2 py-2 text-muted">{t('board.noSuggestion')}</p>}
+          {suggestions.data?.map((m, i) => (
+            <button
+              key={m.machine_id}
+              type="button"
+              disabled={m.machine_id === currentMachine}
+              onClick={() => { setOpen(false); onPick(m.machine_id) }}
+              className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left hover:bg-surface-2 disabled:opacity-60"
+            >
+              <span className="min-w-0 flex-1">
+                <span className="block truncate font-medium">{m.name}{m.machine_id === currentMachine ? ` · ${t('board.current')}` : ''}</span>
+                <span className="tabular text-muted">{formatMinutes(t, Number(m.est_minutes))} · {t('board.finishAt', { d: time.format(new Date(m.end_at)) })}</span>
+              </span>
+              {i === 0 && m.machine_id !== currentMachine && <span className="rounded bg-status-done/10 px-1.5 text-[10px] text-status-done">{t('board.fastest')}</span>}
+            </button>
+          ))}
+        </div>
+      )}
+    </span>
   )
 }

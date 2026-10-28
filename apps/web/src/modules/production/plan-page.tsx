@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState, type ButtonHTMLAttributes, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from '@tanstack/react-router'
-import { AlertTriangle, ArrowDown, ArrowLeft, ArrowUp, CheckCircle2, GitFork, Lock, Play, Plus, Send, Trash2, X } from 'lucide-react'
+import { AlertTriangle, ArrowDown, ArrowLeft, ArrowUp, CheckCircle2, GitFork, Lock, Pencil, Play, Plus, Send, Trash2, X } from 'lucide-react'
 import { useAuth } from '@/app/auth'
 import { errorMessage } from '@/lib/errors'
 import { cn } from '@/lib/utils'
@@ -26,6 +26,7 @@ import {
   useOrderJobs,
   useReleaseJobs,
   useSaveJob,
+  useEditWorkflow,
   useSubmitPlan,
   type Approval,
   type Coverage,
@@ -342,7 +343,13 @@ function JobCard({ job, lines, approvals, canPlan, onDirty }: CardProps) {
   const save = useSaveJob()
   const cancel = useCancelJob()
 
+  const editWorkflow = useEditWorkflow()
   const editable = canPlan && job.status === 'planning'
+  // Approved / released / on-hold jobs: the flow can change, then goes back for approval (FR-4.7).
+  const reflowable = canPlan && (job.status === 'approved' || job.status === 'in_production' || job.status === 'on_hold')
+  const [flowEdit, setFlowEdit] = useState(false)
+  const stepsEditable = editable || flowEdit
+  const isLocked = (r: Row) => !!r.status && r.status !== 'pending' && r.status !== 'ready'
   const [title, setTitle] = useState(job.title)
   const [jobLines, setJobLines] = useState<JobLine[]>(job.lines.map((l) => ({ ...l, qty: Number(l.qty) })))
   const [rows, setRows] = useState<Row[]>(() => toRows(job.steps))
@@ -366,7 +373,7 @@ function JobCard({ job, lines, approvals, canPlan, onDirty }: CardProps) {
   const totalMinutes = estimates.reduce<number>((s, m) => s + (m ?? 0), 0)
 
   const lastDecision = approvals.find((a) => a.action !== 'submit')
-  const sentBack = job.status === 'planning' && lastDecision && (lastDecision.action === 'reject' || lastDecision.action === 'request_change')
+  const sentBack = (job.status === 'planning' || job.status === 'on_hold') && lastDecision && (lastDecision.action === 'reject' || lastDecision.action === 'request_change')
 
   const update = (i: number, patch: Partial<Row>) => {
     setRows((rs) => rs.map((r, j) => (j === i ? { ...r, ...patch } : r)))
@@ -407,6 +414,30 @@ function JobCard({ job, lines, approvals, canPlan, onDirty }: CardProps) {
     )
   }
 
+  function submitFlow() {
+    const reason = window.prompt(t('plan.reflowReason'))
+    if (reason === null) return
+    editWorkflow.mutate(
+      {
+        p_job: job.id,
+        p_reason: reason || null,
+        p_steps: withSeq(rows).map((r) => ({
+          ...(r.id ? { id: r.id } : {}),
+          seq: r.seq, process_id: r.process_id, machine_id: r.machine_id,
+          planned_qty: r.planned_qty, n_up: r.n_up, passes: r.passes, note: r.note,
+        })),
+      },
+      {
+        onSuccess: () => {
+          setFlowEdit(false)
+          setDirtyLocal(false)
+          toast({ tone: 'success', message: t('plan.reflowSubmitted') })
+        },
+        onError: (e) => toast({ tone: 'error', message: errorMessage(e) }),
+      },
+    )
+  }
+
   function onCancel() {
     const reason = window.prompt(t('plan.cancelReason'))
     if (!reason) return
@@ -427,6 +458,12 @@ function JobCard({ job, lines, approvals, canPlan, onDirty }: CardProps) {
         <JobStatusPill status={job.status} />
         <span className="tabular ml-auto text-sm text-muted">{t('plan.pcs', { n: fmtQty(jobQty || job.qty) })}</span>
         {!editable && job.status === 'pending_approval' && <Lock className="size-4 text-muted" aria-label={t('plan.locked')} />}
+        {reflowable && !flowEdit && (
+          <Button variant="ghost" size="sm" onClick={() => setFlowEdit(true)}>
+            <Pencil className="size-3.5" aria-hidden />
+            {t('plan.editFlow')}
+          </Button>
+        )}
       </header>
 
       {sentBack && (
@@ -490,18 +527,23 @@ function JobCard({ job, lines, approvals, canPlan, onDirty }: CardProps) {
             const style = stepTypeStyle[r.step_type]
             const options = machinesFor(r.process_id)
             const needsMachine = r.step_type === 'internal' && options.length > 0 && !r.machine_id
+            const rowEditable = stepsEditable && !isLocked(r)
             return (
-              <li key={r.key} className={cn('flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg border border-border px-3 py-2', r.parallel && 'ml-6 border-dashed')}>
+              <li key={r.key} className={cn('flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg border border-border px-3 py-2', r.parallel && 'ml-6 border-dashed', flowEdit && isLocked(r) && 'bg-surface-2/60')}>
                 <span className="tabular w-14 shrink-0 text-xs font-medium text-muted">
                   {r.parallel ? <GitFork className="inline size-3.5" aria-label={t('templates.parallel')} /> : t('templates.level', { n: r.seq })}
                 </span>
                 <span className={cn('grid size-7 shrink-0 place-items-center rounded-md', style.cls)}>
                   <style.Icon className="size-4" aria-hidden />
                 </span>
-                <span className="min-w-28 flex-1 font-medium">{p?.name ?? '—'}</span>
+                <span className="min-w-28 flex-1 font-medium">
+                  {p?.name ?? '—'}
+                  {r.is_rework && <span className="ml-1.5 rounded bg-status-paused/10 px-1.5 text-[10px] text-status-paused">{t('plan.rework')}</span>}
+                  {flowEdit && isLocked(r) && <Lock className="ml-1.5 inline size-3.5 text-muted" aria-label={t('plan.lockedStep')} />}
+                </span>
 
                 {options.length > 0 && (
-                  editable ? (
+                  rowEditable ? (
                     <Select aria-label={t('plan.machine')} className={cn('h-8 w-44 text-xs', needsMachine && 'border-status-paused')}
                       value={r.machine_id ?? ''} onChange={(e) => update(i, { machine_id: e.target.value || null })}>
                       <option value="">{t('plan.noMachine')}</option>
@@ -514,9 +556,9 @@ function JobCard({ job, lines, approvals, canPlan, onDirty }: CardProps) {
 
                 {r.step_type === 'internal' && (
                   <div className="flex items-center gap-1.5 text-xs">
-                    <NumBox label={t('plan.stepQty')} value={r.planned_qty} disabled={!editable} width="w-20" onChange={(v) => update(i, { planned_qty: v })} />
-                    <NumBox label={t('plan.nUp')} value={r.n_up} disabled={!editable} width="w-12" onChange={(v) => update(i, { n_up: Math.max(1, Math.round(v)) })} />
-                    <NumBox label={t('plan.passes')} value={r.passes} disabled={!editable} width="w-12" onChange={(v) => update(i, { passes: Math.max(1, Math.round(v)) })} />
+                    <NumBox label={t('plan.stepQty')} value={r.planned_qty} disabled={!rowEditable} width="w-20" onChange={(v) => update(i, { planned_qty: v })} />
+                    <NumBox label={t('plan.nUp')} value={r.n_up} disabled={!rowEditable} width="w-12" onChange={(v) => update(i, { n_up: Math.max(1, Math.round(v)) })} />
+                    <NumBox label={t('plan.passes')} value={r.passes} disabled={!rowEditable} width="w-12" onChange={(v) => update(i, { passes: Math.max(1, Math.round(v)) })} />
                   </div>
                 )}
 
@@ -524,7 +566,7 @@ function JobCard({ job, lines, approvals, canPlan, onDirty }: CardProps) {
                   {formatMinutes(t, estimates[i])}
                 </span>
 
-                {editable && (
+                {rowEditable && (
                   <div className="flex items-center gap-0.5">
                     {i > 0 && (
                       <label className="mr-1 flex cursor-pointer items-center gap-1 text-[11px] text-muted" title={t('templates.parallel')}>
@@ -542,7 +584,7 @@ function JobCard({ job, lines, approvals, canPlan, onDirty }: CardProps) {
           })}
         </ol>
 
-        {editable && (
+        {stepsEditable && (
           <div className="mt-3 flex flex-wrap gap-1.5">
             {(processes.data ?? []).map((p) => {
               const style = stepTypeStyle[p.step_type]
@@ -558,6 +600,21 @@ function JobCard({ job, lines, approvals, canPlan, onDirty }: CardProps) {
           </div>
         )}
       </div>
+
+      {flowEdit && (
+        <footer className="flex flex-wrap items-center justify-between gap-2 border-t border-border bg-status-paused/5 px-5 py-3">
+          <span className="text-xs text-status-paused">{t('plan.reflowHint')}</span>
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="sm" onClick={() => { setRows(toRows(job.steps)); setFlowEdit(false); setDirtyLocal(false) }}>
+              {t('common.cancel')}
+            </Button>
+            <Button size="sm" onClick={submitFlow} loading={editWorkflow.isPending} disabled={!dirty || rows.length === 0}>
+              <Send className="size-3.5" aria-hidden />
+              {t('plan.reflowSubmit')}
+            </Button>
+          </div>
+        </footer>
+      )}
 
       {editable && (
         <footer className="flex items-center justify-between gap-2 border-t border-border px-5 py-3">

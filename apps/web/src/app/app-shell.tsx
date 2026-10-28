@@ -1,4 +1,4 @@
-import { useState, type ButtonHTMLAttributes } from 'react'
+import { Suspense, useState, type ButtonHTMLAttributes } from 'react'
 import { Link, Outlet } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import { Building2, CheckCheck, Settings, Factory, FileText, Gauge, Hammer, KanbanSquare, Languages, Layers, LifeBuoy, LogOut, Moon, Sun, Users, Workflow } from 'lucide-react'
@@ -6,6 +6,8 @@ import { useAuth } from './auth'
 import { useMyTenants, useSupportSession, useSwitchTenant } from '@/modules/platform/api'
 import { usePendingApprovals } from '@/modules/production/api'
 import { NotificationBell } from '@/modules/notifications/notification-bell'
+import { useTenantRealtime } from './realtime'
+import { ListSkeleton } from '@/shared/ui/page'
 import { setLanguage } from '@/shared/i18n'
 import { useToast } from '@/shared/ui/toast'
 import { errorMessage } from '@/lib/errors'
@@ -57,6 +59,7 @@ export function AppShell() {
   const pending = usePendingApprovals(auth.hasRole('manager'))
   const badges: Record<string, number> = { approvals: pending.data?.length ?? 0 }
   const support = useSupportSession()
+  useTenantRealtime()
   const isPlatformAdmin = !!auth.claims?.platform_admin
   const hasTenant = !!auth.claims?.tenant_id
   // Platform admins without a tenant see only the console; with one, the console is added at the end.
@@ -164,7 +167,9 @@ export function AppShell() {
             </button>
           </div>
         )}
-        <Outlet />
+        <Suspense fallback={<ListSkeleton />}>
+          <Outlet />
+        </Suspense>
       </main>
     </div>
   )

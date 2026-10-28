@@ -18,6 +18,8 @@ export type JobStep = {
   passes: number
   est_minutes: number | null
   note: string | null
+  status?: StepStatus
+  is_rework?: boolean
 }
 
 export type JobLine = { sales_order_item_id: string; qty: number }
@@ -57,7 +59,7 @@ export type Approval = {
 const jobSelect =
   'id, job_no, sales_order_id, title, qty, status, due_date, workflow_version, created_at, ' +
   'lines:job_order_items(sales_order_item_id, qty), ' +
-  'steps:job_steps(id, seq, process_id, step_type, machine_id, planned_qty, n_up, passes, est_minutes, note)'
+  'steps:job_steps(id, seq, process_id, step_type, machine_id, planned_qty, n_up, passes, est_minutes, note, status, is_rework)'
 
 export function useOrderJobs(orderId: string) {
   const key = useTenantKey('jobs', orderId)
@@ -196,6 +198,12 @@ export const useApprovePlan = () => usePlanCommand<{ p_sales_order: string; p_jo
 export const useRejectJobs = () =>
   usePlanCommand<{ p_jobs: string[]; p_reason: string; p_request_change?: boolean }>('reject_jobs')
 export const useCancelJob = () => usePlanCommand<{ p_job: string; p_reason: string }>('cancel_job')
+export const useEditWorkflow = () =>
+  usePlanCommand<{ p_job: string; p_steps: Record<string, unknown>[]; p_reason: string | null }, null>('edit_workflow')
+export const useAddRework = () =>
+  usePlanCommand<{ p_step: string; p_qty: number; p_reason: string; p_machine?: string | null }, string>('add_rework_step')
+
+export type MachineSuggestion = { machine_id: string; name: string; est_minutes: number; start_at: string; end_at: string; is_current: boolean }
 
 export function formatMinutes(t: (k: string, o?: Record<string, unknown>) => string, minutes: number | null) {
   if (minutes == null) return '—'
@@ -272,12 +280,14 @@ export type BoardStep = {
   actual_start: string | null
   resumed_at: string | null
   run_minutes: number
+  is_rework: boolean
   job: {
     id: string
     job_no: string
     title: string
     due_date: string | null
     is_at_risk: boolean
+    status: JobStatus
     order: { doc_no: string; customer_po_no: string; customer: { name: string } | null } | null
   }
 }
@@ -288,17 +298,19 @@ export function useBoard() {
   const key = useTenantKey('board')
   return useQuery({
     queryKey: key,
-    refetchInterval: 30_000,   // until realtime broadcast lands (design §6.8)
+    refetchInterval: 60_000,   // safety net; realtime broadcasts refresh it (design §6.8)
     queryFn: async () => {
       const [steps, approved] = await Promise.all([
         db()
           .from('job_steps')
           .select(
             'id, job_id, seq, process_id, step_type, machine_id, status, queue_position, planned_start, planned_end, est_minutes, planned_qty, version, ' +
-              'actual_start, resumed_at, run_minutes, ' +
-              'job:jobs!inner(id, job_no, title, due_date, is_at_risk, status, order:sales_orders(doc_no, customer_po_no, customer:customers(name)))',
+              'actual_start, resumed_at, run_minutes, is_rework, ' +
+              'job:jobs!inner(id, job_no, title, due_date, is_at_risk, status, released_at, order:sales_orders(doc_no, customer_po_no, customer:customers(name)))',
           )
-          .eq('job.status', 'in_production')
+          // Released jobs stay on the board while a new flow awaits approval or the job is on hold.
+          .in('job.status', ['in_production', 'pending_approval', 'on_hold'])
+          .not('job.released_at', 'is', null)
           .in('status', ['pending', 'ready', 'in_progress', 'paused'])
           .order('queue_position', { nullsFirst: false })
           .order('planned_start'),
@@ -426,6 +438,8 @@ export type JobDetail = Omit<Job, 'steps'> & {
     waste_qty: number
     run_minutes: number
     resumed_at: string | null
+    is_rework: boolean
+    rework_reason: string | null
   })[]
 }
 
@@ -445,7 +459,7 @@ export function useJobDetail(jobId: string) {
               'order:sales_orders(id, doc_no, customer_po_no, customer:customers(name), items:sales_order_items(id, line_no, description, qty)), ' +
               'lines:job_order_items(sales_order_item_id, qty), ' +
               'steps:job_steps(id, seq, process_id, step_type, machine_id, planned_qty, n_up, passes, est_minutes, note, status, ' +
-              'planned_start, planned_end, actual_start, actual_end, good_qty, waste_qty, run_minutes, resumed_at)',
+              'planned_start, planned_end, actual_start, actual_end, good_qty, waste_qty, run_minutes, resumed_at, is_rework, rework_reason)',
           )
           .eq('id', jobId)
           .order('seq', { referencedTable: 'job_steps' })
@@ -460,6 +474,20 @@ export function useJobDetail(jobId: string) {
       if (job.error) throw job.error
       if (logs.error) throw logs.error
       return { job: job.data as unknown as JobDetail, logs: logs.data as ActivityLog[] }
+    },
+  })
+}
+
+export function useSuggestMachines(stepId: string | null) {
+  const key = useTenantKey('suggest', stepId)
+  return useQuery({
+    queryKey: key,
+    enabled: !!stepId,
+    staleTime: 0,
+    queryFn: async () => {
+      const { data, error } = await rpc().rpc('suggest_machines', { p_step: stepId })
+      if (error) throw error
+      return (data as MachineSuggestion[]).sort((a, b) => a.end_at.localeCompare(b.end_at))
     },
   })
 }

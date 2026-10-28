@@ -4,6 +4,9 @@
 create function plan(n int) returns setof text language plpgsql as $$
 begin
   create temp table if not exists __tap (n serial, ok boolean, descr text);
+  create temp table if not exists __tap_plan (planned int);
+  grant all on __tap_plan to public;
+  insert into __tap_plan values (n);
   -- tests switch to the authenticated role mid-file
   grant all on __tap to public;
   grant all on sequence __tap_n_seq to public;
@@ -59,6 +62,10 @@ begin
   select count(*) filter (where not ok), count(*) into v_failed, v_total from __tap;
   if v_failed > 0 then
     return next format('# Looks like you failed %s test(s) of %s', v_failed, v_total);
+  end if;
+  -- Same check real pgTAP makes: the declared plan must match what ran.
+  if (select planned from __tap_plan limit 1) <> v_total then
+    return next format('not ok - planned %s test(s) but ran %s', (select planned from __tap_plan limit 1), v_total);
   end if;
 end $$;
 

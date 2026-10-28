@@ -1,3 +1,4 @@
+import { lazy } from 'react'
 import type { RouteComponent } from '@tanstack/react-router'
 import {
   createRootRouteWithContext,
@@ -10,20 +11,25 @@ import type { AuthState } from './auth'
 import { AppShell } from './app-shell'
 import { LoginPage } from '@/modules/platform/login-page'
 import { OnboardingPage } from '@/modules/platform/onboarding-page'
-import { MachinesPage } from '@/modules/masters/machines/machines-page'
-import { ProcessesPage } from '@/modules/masters/processes/processes-page'
-import { CustomersPage } from '@/modules/masters/customers/customers-page'
-import { TemplatesPage } from '@/modules/masters/templates/templates-page'
-import { OrdersPage } from '@/modules/orders/orders-page'
-import { NewOrderPage, OrderEditorPage } from '@/modules/orders/order-editor-page'
-import { PlanPage } from '@/modules/production/plan-page'
-import { ApprovalsPage } from '@/modules/production/approvals-page'
-import { BoardPage } from '@/modules/production/board-page'
-import { FloorPage } from '@/modules/production/floor-page'
-import { JobPage, JobTicketPage } from '@/modules/production/job-page'
-import { AdminTenantsPage } from '@/modules/platform/admin-tenants-page'
-import { SettingsPage } from '@/modules/settings/settings-page'
-import { DashboardPage } from '@/modules/dashboard/dashboard-page'
+
+
+// Pages load on demand (one chunk each); login and onboarding stay in the main bundle.
+const MachinesPage = lazy(() => import('@/modules/masters/machines/machines-page').then((m) => ({ default: m.MachinesPage })))
+const ProcessesPage = lazy(() => import('@/modules/masters/processes/processes-page').then((m) => ({ default: m.ProcessesPage })))
+const CustomersPage = lazy(() => import('@/modules/masters/customers/customers-page').then((m) => ({ default: m.CustomersPage })))
+const TemplatesPage = lazy(() => import('@/modules/masters/templates/templates-page').then((m) => ({ default: m.TemplatesPage })))
+const OrdersPage = lazy(() => import('@/modules/orders/orders-page').then((m) => ({ default: m.OrdersPage })))
+const NewOrderPage = lazy(() => import('@/modules/orders/order-editor-page').then((m) => ({ default: m.NewOrderPage })))
+const OrderEditorPage = lazy(() => import('@/modules/orders/order-editor-page').then((m) => ({ default: m.OrderEditorPage })))
+const PlanPage = lazy(() => import('@/modules/production/plan-page').then((m) => ({ default: m.PlanPage })))
+const ApprovalsPage = lazy(() => import('@/modules/production/approvals-page').then((m) => ({ default: m.ApprovalsPage })))
+const BoardPage = lazy(() => import('@/modules/production/board-page').then((m) => ({ default: m.BoardPage })))
+const FloorPage = lazy(() => import('@/modules/production/floor-page').then((m) => ({ default: m.FloorPage })))
+const JobPage = lazy(() => import('@/modules/production/job-page').then((m) => ({ default: m.JobPage })))
+const JobTicketPage = lazy(() => import('@/modules/production/job-page').then((m) => ({ default: m.JobTicketPage })))
+const AdminTenantsPage = lazy(() => import('@/modules/platform/admin-tenants-page').then((m) => ({ default: m.AdminTenantsPage })))
+const SettingsPage = lazy(() => import('@/modules/settings/settings-page').then((m) => ({ default: m.SettingsPage })))
+const DashboardPage = lazy(() => import('@/modules/dashboard/dashboard-page').then((m) => ({ default: m.DashboardPage })))
 
 type Ctx = { auth: AuthState }
 

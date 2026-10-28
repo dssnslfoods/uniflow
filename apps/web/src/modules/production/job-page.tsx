@@ -1,7 +1,7 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from '@tanstack/react-router'
-import { AlertTriangle, ArrowLeft, Printer } from 'lucide-react'
+import { AlertTriangle, ArrowLeft, Printer, RotateCcw } from 'lucide-react'
 import { QRCodeSVG } from 'qrcode.react'
 import { errorMessage } from '@/lib/errors'
 import { cn } from '@/lib/utils'
@@ -11,7 +11,10 @@ import { useMachines } from '../masters/machines/api'
 import { useProcesses } from '../masters/processes/api'
 import { stepTypeStyle } from '../masters/processes/step-type'
 import { formatDate } from '../orders/format'
-import { useProfileNames, formatMinutes, runMinutes, useJobDetail, type JobDetail } from './api'
+import { useAuth } from '@/app/auth'
+import { Input } from '@/shared/ui/input'
+import { useToast } from '@/shared/ui/toast'
+import { useAddRework, useProfileNames, formatMinutes, runMinutes, useJobDetail, type JobDetail } from './api'
 import { JobStatusPill } from './job-status'
 
 const fmtTime = (iso: string | null) =>
@@ -40,6 +43,8 @@ function useLookups() {
 export function JobPage({ jobId }: { jobId: string }) {
   const { t } = useTranslation()
   const detail = useJobDetail(jobId)
+  const { hasRole } = useAuth()
+  const canRework = hasRole('admin', 'manager', 'supervisor')
   const { processName, machineName } = useLookups()
   const actorIds = useMemo(() => [...new Set((detail.data?.logs ?? []).map((l) => l.actor_id).filter(Boolean) as string[])], [detail.data])
   const names = useProfileNames(actorIds)
@@ -93,6 +98,11 @@ export function JobPage({ jobId }: { jobId: string }) {
                     <span className="tabular w-14 text-xs font-medium text-muted">{t('board.stage', { n: s.seq })}</span>
                     <span className={cn('grid size-6 place-items-center rounded', style.cls)}><style.Icon className="size-3.5" aria-hidden /></span>
                     <span className="font-medium">{processName.get(s.process_id)}</span>
+                    {s.is_rework && (
+                      <span className="rounded bg-status-paused/10 px-1.5 py-0.5 text-[11px] text-status-paused" title={s.rework_reason ?? ''}>
+                        {t('plan.rework')}
+                      </span>
+                    )}
                     {s.machine_id && <span className="text-sm text-muted">· {machineName.get(s.machine_id)}</span>}
                     <span className="ml-auto rounded-full bg-surface-2 px-2 py-0.5 text-xs">{t(`stepStatus.${s.status}`)}</span>
                   </div>
@@ -107,6 +117,10 @@ export function JobPage({ jobId }: { jobId: string }) {
                       </span>
                     )}
                   </div>
+                  {s.rework_reason && <p className="mt-1 pl-16 text-xs text-status-paused">{s.rework_reason}</p>}
+                  {s.status === 'done' && canRework && (job.status === 'in_production' || job.status === 'ready_to_deliver') && (
+                    <ReworkForm stepId={s.id!} suggestedQty={Number(s.waste_qty)} />
+                  )}
                 </li>
               )
             })}
@@ -144,6 +158,47 @@ export function JobPage({ jobId }: { jobId: string }) {
         </aside>
       </div>
     </div>
+  )
+}
+
+// Rework (G-04): redo part of a finished step; no re-approval needed.
+function ReworkForm({ stepId, suggestedQty }: { stepId: string; suggestedQty: number }) {
+  const { t } = useTranslation()
+  const toast = useToast()
+  const add = useAddRework()
+  const [open, setOpen] = useState(false)
+  const [qty, setQty] = useState(String(suggestedQty || ''))
+  const [reason, setReason] = useState('')
+
+  if (!open) {
+    return (
+      <button type="button" onClick={() => setOpen(true)} className="mt-1.5 ml-16 inline-flex items-center gap-1 text-xs text-status-paused hover:underline">
+        <RotateCcw className="size-3.5" aria-hidden />
+        {t('job.addRework')}
+      </button>
+    )
+  }
+  return (
+    <form
+      className="mt-2 ml-16 flex flex-wrap items-center gap-2"
+      onSubmit={(e) => {
+        e.preventDefault()
+        add.mutate(
+          { p_step: stepId, p_qty: Number(qty), p_reason: reason },
+          {
+            onSuccess: () => { toast({ tone: 'success', message: t('job.reworkAdded') }); setOpen(false) },
+            onError: (err) => toast({ tone: 'error', message: errorMessage(err) }),
+          },
+        )
+      }}
+    >
+      <Input type="number" min={1} aria-label={t('plan.qty')} placeholder={t('plan.qty')} className="tabular h-8 w-24 text-right" value={qty}
+        onChange={(e) => setQty(e.target.value)} required autoFocus />
+      <Input aria-label={t('job.reworkReason')} placeholder={t('job.reworkReason')} className="h-8 min-w-40 flex-1" value={reason}
+        onChange={(e) => setReason(e.target.value)} required />
+      <Button size="sm" type="submit" loading={add.isPending}>{t('job.addRework')}</Button>
+      <Button size="sm" variant="ghost" onClick={() => setOpen(false)}>{t('common.cancel')}</Button>
+    </form>
   )
 }
 
