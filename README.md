@@ -51,13 +51,17 @@ pnpm db:test:local
 
 ### Deploy (Firebase Hosting)
 
+Live: **https://uniflow-mrp.web.app** (Firebase project `uniflow-mrp`, see `.firebaserc`).
+
 ```bash
-firebase login
-pnpm deploy:hosting            # builds apps/web and deploys to the default project
-firebase deploy --only hosting -P production
+pnpm deploy:hosting            # builds apps/web (with apps/web/.env.local) and deploys
 ```
 
-Project ids live in `.firebaserc` (`uniflow-staging`, `uniflow-prod`) — rename to your real Firebase projects.
+Supabase Auth must list the hosting domain: `site_url` / `additional_redirect_urls` in
+`supabase/config.toml`, applied with `supabase config push` (answer each service prompt
+explicitly — an unanswered prompt defaults to **Y**).
+
+Edge Functions: `supabase functions deploy invite-member --use-api`.
 
 ## Conventions
 
