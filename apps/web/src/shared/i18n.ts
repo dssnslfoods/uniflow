@@ -177,6 +177,7 @@ const th = {
     dueToday: 'ครบกำหนดวันนี้',
     noFile: 'ยังไม่มีไฟล์ PO',
     openFile: 'เปิดไฟล์',
+    openFull: 'เปิดหน้า PO เต็ม',
   },
   soStatus: {
     draft: 'ร่าง',
@@ -254,6 +255,7 @@ const th = {
     submittedBy: 'ส่งโดย {{name}} · {{when}}',
     waiting: 'รอ {{h}} ชม.',
     lines: 'รายการ PO',
+    viewPo: 'ดู PO',
   },
   admin: {
     title: 'จัดการโรงพิมพ์ทั้งหมด',
@@ -644,6 +646,7 @@ const en: typeof th = {
     dueToday: 'Due today',
     noFile: 'No PO file yet',
     openFile: 'Open file',
+    openFull: 'Open full PO page',
   },
   soStatus: {
     draft: 'Draft',
@@ -721,6 +724,7 @@ const en: typeof th = {
     submittedBy: 'Submitted by {{name}} · {{when}}',
     waiting: 'waiting {{h}} h',
     lines: 'PO lines',
+    viewPo: 'View PO',
   },
   admin: {
     title: 'All print shops',

@@ -1,10 +1,20 @@
 import { useEffect, type ReactNode } from 'react'
 import { X } from 'lucide-react'
+import { cn } from '@/lib/utils'
 
-type Props = { open: boolean; title: string; onClose: () => void; children: ReactNode; footer?: ReactNode }
+type Props = {
+  open: boolean
+  title: ReactNode
+  onClose: () => void
+  children: ReactNode
+  footer?: ReactNode
+  size?: 'md' | 'xl'
+}
+
+const widths = { md: 'max-w-md', xl: 'max-w-5xl' }
 
 // Side panel instead of page navigation, so the list stays in context (design §8.0).
-export function Drawer({ open, title, onClose, children, footer }: Props) {
+export function Drawer({ open, title, onClose, children, footer, size = 'md' }: Props) {
   useEffect(() => {
     if (!open) return
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose()
@@ -19,11 +29,15 @@ export function Drawer({ open, title, onClose, children, footer }: Props) {
       <aside
         role="dialog"
         aria-modal="true"
-        aria-label={title}
-        className="relative flex h-full w-full max-w-md flex-col border-l border-border bg-surface shadow-xl animate-[slide-in_180ms_ease-out]"
+        aria-label={typeof title === 'string' ? title : undefined}
+        className={cn(
+          'relative flex h-full w-full flex-col',
+          widths[size],
+          'border-l border-border bg-surface shadow-xl animate-[slide-in_180ms_ease-out]',
+        )}
       >
         <header className="flex items-center justify-between border-b border-border px-5 py-4">
-          <h2 className="text-base font-semibold">{title}</h2>
+          <h2 className="min-w-0 text-base font-semibold">{title}</h2>
           <button onClick={onClose} className="rounded-md p-1 text-muted hover:bg-surface-2" aria-label="close">
             <X className="size-5" />
           </button>

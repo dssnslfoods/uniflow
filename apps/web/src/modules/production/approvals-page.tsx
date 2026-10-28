@@ -1,7 +1,7 @@
-import { useMemo, type ReactNode } from 'react'
+import { useMemo, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from '@tanstack/react-router'
-import { CheckCheck, Clock, GitFork, Inbox } from 'lucide-react'
+import { CheckCheck, Clock, FileText, GitFork, Inbox } from 'lucide-react'
 import { useAuth } from '@/app/auth'
 import { errorMessage } from '@/lib/errors'
 import { cn } from '@/lib/utils'
@@ -12,6 +12,7 @@ import { useMachines } from '../masters/machines/api'
 import { useProcesses } from '../masters/processes/api'
 import { stepTypeStyle } from '../masters/processes/step-type'
 import { formatDate } from '../orders/format'
+import { PoPreview } from '../orders/po-preview'
 import {
   formatMinutes,
   useApprovals,
@@ -68,6 +69,7 @@ function OrderGroup({ jobs, submits, names, canDecide }: GroupProps) {
   const approve = useApprovePlan()
   const reject = useRejectJobs()
   const order = jobs[0].order
+  const [viewing, setViewing] = useState(false)
 
   const submit = submits.find((a) => jobs.some((j) => j.id === a.entity_id))
   const waitingHours = submit ? Math.floor((Date.now() - new Date(submit.created_at).getTime()) / 3_600_000) : 0
@@ -112,13 +114,20 @@ function OrderGroup({ jobs, submits, names, canDecide }: GroupProps) {
             {t('approvals.waiting', { h: waitingHours })}
           </span>
         )}
-        {canDecide && (
-          <Button className="ml-auto" onClick={approveAll} loading={approve.isPending}>
-            <CheckCheck className="size-4" aria-hidden />
-            {t('approvals.approveAll', { n: jobs.length })}
+        <div className="ml-auto flex flex-wrap gap-2">
+          <Button variant="secondary" onClick={() => setViewing(true)}>
+            <FileText className="size-4" aria-hidden />
+            {t('approvals.viewPo')}
           </Button>
-        )}
+          {canDecide && (
+            <Button onClick={approveAll} loading={approve.isPending}>
+              <CheckCheck className="size-4" aria-hidden />
+              {t('approvals.approveAll', { n: jobs.length })}
+            </Button>
+          )}
+        </div>
       </header>
+      {viewing && <PoPreview orderId={order.id} onClose={() => setViewing(false)} />}
 
       <ul>
         {jobs.map((job, i) => (
