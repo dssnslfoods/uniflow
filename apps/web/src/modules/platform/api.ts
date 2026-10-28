@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { rpc } from '@/lib/supabase'
+import { rpc, supabase } from '@/lib/supabase'
 import { useAuth } from '@/app/auth'
 import type { Role } from '@/lib/claims'
 
@@ -135,5 +135,77 @@ export function useAdminSetModules() {
       if (error) throw error
     },
     onSettled: () => Promise.all([qc.invalidateQueries({ queryKey: ['admin-tenants'] }), qc.invalidateQueries({ queryKey: ['tenant'] })]),
+  })
+}
+
+// Console: people of one shop ---------------------------------------------------------
+
+export type AdminMember = {
+  membership_id: string
+  user_id: string
+  email: string
+  full_name: string | null
+  roles: Role[]
+  is_active: boolean
+  joined_at: string
+  last_sign_in_at: string | null
+  invited_pending: boolean
+}
+
+export function useAdminMembers(tenantId: string | null) {
+  return useQuery({
+    queryKey: ['admin-members', tenantId],
+    enabled: !!tenantId,
+    queryFn: async () => {
+      const { data, error } = await rpc().rpc('admin_list_members', { p_tenant: tenantId })
+      if (error) throw error
+      return data as AdminMember[]
+    },
+  })
+}
+
+function useInvalidateConsole() {
+  const qc = useQueryClient()
+  return () => Promise.all([qc.invalidateQueries({ queryKey: ['admin-members'] }), qc.invalidateQueries({ queryKey: ['admin-tenants'] })])
+}
+
+// Edge Function with tenantId: account (if new) + invitation email + membership in that shop.
+export function useAdminInvite() {
+  const invalidate = useInvalidateConsole()
+  return useMutation({
+    mutationFn: async ({ tenantId, email, roles }: { tenantId: string; email: string; roles: Role[] }) => {
+      const { data, error } = await supabase.functions.invoke('invite-member', {
+        body: { tenantId, email, roles, redirectTo: window.location.origin },
+      })
+      if (error) {
+        const body = await (error as { context?: Response }).context?.json?.().catch(() => null)
+        throw Object.assign(new Error(body?.message ?? error.message), { details: body?.code })
+      }
+      return data as { invited: boolean }
+    },
+    onSettled: invalidate,
+  })
+}
+
+export function useAdminSetMember() {
+  const invalidate = useInvalidateConsole()
+  return useMutation({
+    mutationFn: async ({ id, roles, active }: { id: string; roles: Role[]; active: boolean }) => {
+      const { error } = await rpc().rpc('admin_set_member', { p_membership: id, p_roles: roles, p_is_active: active })
+      if (error) throw error
+    },
+    onSettled: invalidate,
+  })
+}
+
+export function useAdminCreateTenant() {
+  const invalidate = useInvalidateConsole()
+  return useMutation({
+    mutationFn: async ({ name, plan, modules }: { name: string; plan: string; modules: string[] }) => {
+      const { data, error } = await rpc().rpc('admin_create_tenant', { p_name: name, p_plan: plan, p_modules: modules })
+      if (error) throw error
+      return data as string
+    },
+    onSettled: invalidate,
   })
 }

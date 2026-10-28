@@ -11,6 +11,8 @@ import type { AuthState } from './auth'
 import { AppShell } from './app-shell'
 import { LoginPage } from '@/modules/platform/login-page'
 import { OnboardingPage } from '@/modules/platform/onboarding-page'
+import { SetPasswordPage } from '@/modules/platform/set-password-page'
+import { needsPassword } from '@/lib/supabase'
 import { ModuleGate } from '@/shared/ui/module-gate'
 import type { ModuleKey } from '@/modules/settings/api'
 
@@ -36,6 +38,7 @@ const DeliveryPage = lazy(() => import('@/modules/delivery/delivery-page').then(
 const DeliveryNotePage = lazy(() => import('@/modules/delivery/delivery-page').then((m) => ({ default: m.DeliveryNotePage })))
 const InventoryPage = lazy(() => import('@/modules/inventory/inventory-page').then((m) => ({ default: m.InventoryPage })))
 const ProofsPage = lazy(() => import('@/modules/proof/proofs-page').then((m) => ({ default: m.ProofsPage })))
+const AdminUsersPage = lazy(() => import('@/modules/platform/admin-users-page').then((m) => ({ default: m.AdminUsersPage })))
 const DashboardPage = lazy(() => import('@/modules/dashboard/dashboard-page').then((m) => ({ default: m.DashboardPage })))
 
 type Ctx = { auth: AuthState }
@@ -49,6 +52,12 @@ const loginRoute = createRoute({
     if (context.auth.session) throw redirect({ to: '/' })
   },
   component: LoginPage,
+})
+
+const setPasswordRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/set-password',
+  component: SetPasswordPage,
 })
 
 const onboardingRoute = createRoute({
@@ -66,10 +75,11 @@ const appRoute = createRoute({
   id: 'app',
   beforeLoad: ({ context, location }) => {
     if (!context.auth.session) throw redirect({ to: '/login' })
+    if (needsPassword()) throw redirect({ to: '/set-password' })
     if (!context.auth.claims?.tenant_id) {
       // Platform admins work without a tenant; only the admin console is reachable then.
       if (context.auth.claims?.platform_admin) {
-        if (location.pathname !== '/admin') throw redirect({ to: '/admin' })
+        if (!location.pathname.startsWith('/admin')) throw redirect({ to: '/admin' })
       } else {
         throw redirect({ to: '/onboarding' })
       }
@@ -96,6 +106,16 @@ const machinesRoute = createRoute({
 const page = <P extends string>(path: P, component: RouteComponent) =>
   createRoute({ getParentRoute: () => appRoute, path, component })
 const gated = (module: ModuleKey, Page: RouteComponent) => () => <ModuleGate module={module}><Page /></ModuleGate>
+
+const adminUsersRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: '/admin/users',
+  validateSearch: (s: Record<string, unknown>) => ({ shop: typeof s.shop === 'string' ? s.shop : undefined }),
+  component: function AdminUsersRoute() {
+    const { shop } = adminUsersRoute.useSearch()
+    return <AdminUsersPage shop={shop} />
+  },
+})
 
 const ordersRoute = page('/orders', OrdersPage)
 const newOrderRoute = page('/orders/new', NewOrderPage)
@@ -156,6 +176,7 @@ const deliveryNoteRoute = createRoute({
 const routeTree = rootRoute.addChildren([
   loginRoute,
   onboardingRoute,
+  setPasswordRoute,
   appRoute.addChildren([
     indexRoute,
     ordersRoute,
@@ -169,6 +190,7 @@ const routeTree = rootRoute.addChildren([
     jobRoute,
     jobTicketRoute,
     page('/admin', AdminTenantsPage),
+    adminUsersRoute,
     page('/settings', SettingsPage),
     page('/dashboard', DashboardPage),
     page('/outsource', gated('outsource', OutsourcePage)),

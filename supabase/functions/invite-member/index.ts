@@ -1,7 +1,9 @@
-// Invite a person to the caller's print shop by email.
-// The caller's own JWT is used for every permission check (api.add_member requires the
-// shop admin role and enforces plan limits); the service role is used only to create
-// the auth account and send the invitation email.
+// Invite a person to a print shop by email.
+// Without tenantId: the caller's current shop (caller must be its admin).
+// With tenantId: any shop (caller must be a platform admin).
+// The caller's own JWT is used for every permission check (api.add_member / api.admin_add_member
+// enforce roles and plan limits); the service role is used only to create the auth account
+// and send the invitation email.
 import { createClient } from 'npm:@supabase/supabase-js@2.118.0'
 
 const cors = {
@@ -28,7 +30,7 @@ Deno.serve(async (req) => {
   })
   const admin = createClient(url, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, { auth: { persistSession: false } })
 
-  let body: { email?: string; roles?: string[]; redirectTo?: string }
+  let body: { email?: string; roles?: string[]; redirectTo?: string; tenantId?: string }
   try {
     body = await req.json()
   } catch {
@@ -39,11 +41,16 @@ Deno.serve(async (req) => {
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return reply(400, { code: 'member.invalid_email' })
   if (wanted.length === 0) return reply(400, { code: 'member.roles_required' })
 
-  // Caller must be the admin of their current shop.
-  const { data: tenants, error: tenantsError } = await asCaller.schema('api').rpc('my_tenants')
-  if (tenantsError) return reply(401, { code: 'auth.required' })
-  const current = (tenants as { roles: string[]; is_current: boolean }[]).find((t) => t.is_current)
-  if (!current?.roles.includes('admin')) return reply(403, { code: 'auth.forbidden' })
+  // Check permission before any email goes out.
+  if (body.tenantId) {
+    const { error: consoleError } = await asCaller.schema('api').rpc('admin_list_members', { p_tenant: body.tenantId })
+    if (consoleError) return reply(403, { code: consoleError.details ?? 'auth.forbidden', message: consoleError.message })
+  } else {
+    const { data: tenants, error: tenantsError } = await asCaller.schema('api').rpc('my_tenants')
+    if (tenantsError) return reply(401, { code: 'auth.required' })
+    const current = (tenants as { roles: string[]; is_current: boolean }[]).find((t) => t.is_current)
+    if (!current?.roles.includes('admin')) return reply(403, { code: 'auth.forbidden' })
+  }
 
   // New address: create the account and send the invitation. Existing account: just add it.
   const { error: inviteError } = await admin.auth.admin.inviteUserByEmail(email, {
@@ -52,9 +59,9 @@ Deno.serve(async (req) => {
   const alreadyExists = inviteError && /already|registered|exists/i.test(inviteError.message)
   if (inviteError && !alreadyExists) return reply(400, { code: 'member.invite_failed', message: inviteError.message })
 
-  const { data: membershipId, error: addError } = await asCaller
-    .schema('api')
-    .rpc('add_member', { p_email: email, p_roles: wanted })
+  const { data: membershipId, error: addError } = body.tenantId
+    ? await asCaller.schema('api').rpc('admin_add_member', { p_tenant: body.tenantId, p_email: email, p_roles: wanted })
+    : await asCaller.schema('api').rpc('add_member', { p_email: email, p_roles: wanted })
   if (addError) return reply(400, { code: addError.details ?? 'member.add_failed', message: addError.message })
 
   return reply(200, { membership_id: membershipId, invited: !alreadyExists })

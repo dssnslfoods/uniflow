@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useNavigate } from '@tanstack/react-router'
-import { Building2, Database, LogIn, LogOut, Search, ShieldCheck } from 'lucide-react'
+import { Link, useNavigate } from '@tanstack/react-router'
+import { Building2, Database, UserCog, LogIn, LogOut, Search, ShieldCheck } from 'lucide-react'
 import { useAuth } from '@/app/auth'
 import { errorMessage } from '@/lib/errors'
 import { cn } from '@/lib/utils'
@@ -183,6 +183,11 @@ export function AdminTenantsPage() {
                   <td className="tabular px-4 py-3 text-right">{x.open_orders}</td>
                   <td className="tabular px-4 py-3 text-right">{x.active_jobs}</td>
                   <td className="whitespace-nowrap px-4 py-3 text-right">
+                    <Link to="/admin/users" search={{ shop: x.tenant_id }} title={t('adminUsers.manage')}
+                      className="inline-flex h-8 items-center gap-1.5 rounded-lg px-3 text-[13px] hover:bg-surface-2">
+                      <UserCog className="size-3.5" aria-hidden />
+                      <span className="sr-only xl:not-sr-only">{t('adminUsers.manage')}</span>
+                    </Link>
                     <Button variant="ghost" size="sm" onClick={() => seedDemo(x)} loading={seed.isPending && seed.variables === x.tenant_id} title={t('admin.seed')}>
                       <Database className="size-3.5" aria-hidden />
                       <span className="sr-only xl:not-sr-only">{t('admin.seed')}</span>

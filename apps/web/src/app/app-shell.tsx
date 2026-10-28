@@ -1,7 +1,7 @@
 import { Suspense, useState, type ButtonHTMLAttributes } from 'react'
 import { Link, Outlet } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import { Building2, CheckCheck, FileCheck2, Settings, Send, Truck, Factory, FileText, Gauge, Hammer, KanbanSquare, Languages, Layers, LifeBuoy, LogOut, Moon, Package, Sun, Users, Workflow } from 'lucide-react'
+import { Building2, UserCog, CheckCheck, FileCheck2, Settings, Send, Truck, Factory, FileText, Gauge, Hammer, KanbanSquare, Languages, Layers, LifeBuoy, LogOut, Moon, Package, Sun, Users, Workflow } from 'lucide-react'
 import { useAuth } from './auth'
 import { useMyTenants, useSupportSession, useSwitchTenant } from '@/modules/platform/api'
 import { usePendingApprovals } from '@/modules/production/api'
@@ -72,7 +72,7 @@ export function AppShell() {
   const shopGroups = navGroups.map((g) => ({ ...g, items: g.items.filter((i) => !i.module || modules.has(i.module)) }))
   const groups = [
     ...(hasTenant ? shopGroups : []),
-    ...(isPlatformAdmin ? [{ key: 'platform', items: [{ to: '/admin', key: 'admin', Icon: Building2 }] }] : []),
+    ...(isPlatformAdmin ? [{ key: 'platform', items: [{ to: '/admin', key: 'admin', Icon: Building2 }, { to: '/admin/users', key: 'adminUsers', Icon: UserCog }] }] : []),
   ]
 
   return (

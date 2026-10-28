@@ -15,7 +15,7 @@ import { useInviteMember, useMembers, useSetMemberRoles, useSetOperatorMachines,
 
 const allRoles: Role[] = ['admin', 'executive', 'manager', 'supervisor', 'staff']
 
-function RolePicker({ value, onChange, disabled }: { value: Role[]; onChange: (r: Role[]) => void; disabled?: boolean }) {
+export function RolePicker({ value, onChange, disabled }: { value: Role[]; onChange: (r: Role[]) => void; disabled?: boolean }) {
   const { t } = useTranslation()
   return (
     <div className="flex flex-wrap gap-1.5">
