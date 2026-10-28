@@ -103,7 +103,15 @@ export function OrdersPage() {
                   const days = o.due_date ? daysUntil(o.due_date) : null
                   const open = o.status === 'draft' || o.status === 'confirmed' || o.status === 'in_progress'
                   return (
-                    <tr key={o.id} className="group border-t border-border hover:bg-surface-2/60">
+                    // Whole row opens the PO; the SO link stays for keyboard users and open-in-new-tab.
+                    <tr
+                      key={o.id}
+                      className="group cursor-pointer border-t border-border hover:bg-surface-2/60"
+                      onClick={(e) => {
+                        if ((e.target as HTMLElement).closest('a')) return
+                        navigate({ to: '/orders/$orderId', params: { orderId: o.id } })
+                      }}
+                    >
                       <td className="px-4 py-3">
                         <Link to="/orders/$orderId" params={{ orderId: o.id }} className="font-medium group-hover:text-brand">
                           {o.doc_no}
@@ -115,7 +123,7 @@ export function OrdersPage() {
                         <div>{formatDate(o.due_date)}</div>
                         {open && days !== null && (
                           <div className={cn('text-xs', days < 0 ? 'text-status-risk' : days <= 3 ? 'text-status-paused' : 'text-muted')}>
-                            {days < 0 ? t('orders.overdue', { n: -days }) : t('orders.inDays', { n: days })}
+                            {days < 0 ? t('orders.overdue', { n: -days }) : days === 0 ? t('orders.dueToday') : t('orders.inDays', { n: days })}
                           </div>
                         )}
                       </td>
