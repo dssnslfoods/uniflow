@@ -19,6 +19,8 @@ import { NewOrderPage, OrderEditorPage } from '@/modules/orders/order-editor-pag
 import { PlanPage } from '@/modules/production/plan-page'
 import { ApprovalsPage } from '@/modules/production/approvals-page'
 import { BoardPage } from '@/modules/production/board-page'
+import { FloorPage } from '@/modules/production/floor-page'
+import { JobPage, JobTicketPage } from '@/modules/production/job-page'
 import { AdminTenantsPage } from '@/modules/platform/admin-tenants-page'
 
 type Ctx = { auth: AuthState }
@@ -99,6 +101,33 @@ const planRoute = createRoute({
   },
 })
 
+const floorStepRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: '/floor/step/$stepId',
+  component: function FloorStepRoute() {
+    const { stepId } = floorStepRoute.useParams()
+    return <FloorPage focusStepId={stepId} />
+  },
+})
+
+const jobRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: '/jobs/$jobId',
+  component: function JobRoute() {
+    const { jobId } = jobRoute.useParams()
+    return <JobPage key={jobId} jobId={jobId} />
+  },
+})
+
+const jobTicketRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: '/jobs/$jobId/ticket',
+  component: function JobTicketRoute() {
+    const { jobId } = jobTicketRoute.useParams()
+    return <JobTicketPage jobId={jobId} />
+  },
+})
+
 const routeTree = rootRoute.addChildren([
   loginRoute,
   onboardingRoute,
@@ -110,6 +139,10 @@ const routeTree = rootRoute.addChildren([
     planRoute,
     page('/approvals', ApprovalsPage),
     page('/board', BoardPage),
+    page('/floor', () => <FloorPage />),
+    floorStepRoute,
+    jobRoute,
+    jobTicketRoute,
     page('/admin', AdminTenantsPage),
     machinesRoute,
     page('/processes', ProcessesPage),

@@ -33,6 +33,11 @@ begin
     jsonb_build_array(jsonb_build_object('sales_order_item_id', i.id, 'qty', 1000)))
   from app.sales_orders o join app.sales_order_items i on i.sales_order_id = o.id;
   perform api.submit_po_plan(id) from app.sales_orders;
+  update app.tenants set settings = jsonb_set(settings, '{allow_self_approval}', 'true');
+  perform api.approve_po_plan(id) from app.sales_orders;
+  perform api.release_jobs(array(select id from app.jobs));
+  perform api.start_step(id) from app.job_steps where status = 'ready';
+  perform api.start_downtime(id, 'other', 30) from app.machines;
 end $$;
 
 create temp table t_ctx as

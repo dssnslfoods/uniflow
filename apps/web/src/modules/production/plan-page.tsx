@@ -418,7 +418,7 @@ function JobCard({ job, lines, approvals, canPlan, onDirty }: CardProps) {
   return (
     <article className={cn('rounded-[var(--radius-card)] border bg-surface', dirty ? 'border-brand/60' : 'border-border')}>
       <header className="flex flex-wrap items-center gap-3 border-b border-border px-5 py-3">
-        <span className="text-xs font-medium text-muted">{job.job_no}</span>
+        <Link to="/jobs/$jobId" params={{ jobId: job.id }} className="text-xs font-medium text-muted hover:text-brand">{job.job_no}</Link>
         {editable ? (
           <Input aria-label={t('plan.jobTitle')} value={title} onChange={(e) => { setTitle(e.target.value); touch() }} className="h-8 max-w-sm flex-1 font-semibold" />
         ) : (

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
+import { Link } from '@tanstack/react-router'
 import {
   closestCorners,
   DndContext,
@@ -485,7 +486,14 @@ function Card({ step, processName, dimmed, lifted, onFocusJob }: CardProps) {
         <span className="truncate font-semibold">{processName}</span>
       </div>
       <div className="mt-0.5 truncate text-muted">
-        {step.job.title}
+        <Link
+          to="/jobs/$jobId"
+          params={{ jobId: step.job_id }}
+          className="hover:text-brand hover:underline"
+          onPointerDown={(e) => e.stopPropagation()}
+        >
+          {step.job.title}
+        </Link>
         {step.job.order?.customer?.name ? ` · ${step.job.order.customer.name}` : ''}
       </div>
       <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px]">

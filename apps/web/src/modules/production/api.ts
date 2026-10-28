@@ -118,9 +118,13 @@ function useInvalidatePlan() {
   const ordersKey = useTenantKey('sales_orders')
   const boardKey = useTenantKey('board')
   const loadKey = useTenantKey('machine-load')
+  const downKey = useTenantKey('downtimes')
+  const jobKey = useTenantKey('job')
   return () =>
     Promise.all(
-      [jobsKey, coverageKey, approvalsKey, ordersKey, boardKey, loadKey].map((queryKey) => qc.invalidateQueries({ queryKey })),
+      [jobsKey, coverageKey, approvalsKey, ordersKey, boardKey, loadKey, downKey, jobKey].map((queryKey) =>
+        qc.invalidateQueries({ queryKey }),
+      ),
     )
 }
 
@@ -175,13 +179,13 @@ export function useSaveJob() {
   })
 }
 
-export function usePlanCommand<A extends Record<string, unknown>>(fn: string) {
+export function usePlanCommand<A extends Record<string, unknown>, R = number | null>(fn: string) {
   const invalidate = useInvalidatePlan()
   return useMutation({
     mutationFn: async (args: A) => {
       const { data, error } = await rpc().rpc(fn, args)
       if (error) throw error
-      return data as number | null
+      return data as R
     },
     onSettled: invalidate,
   })
@@ -265,6 +269,9 @@ export type BoardStep = {
   est_minutes: number | null
   planned_qty: number
   version: number
+  actual_start: string | null
+  resumed_at: string | null
+  run_minutes: number
   job: {
     id: string
     job_no: string
@@ -288,6 +295,7 @@ export function useBoard() {
           .from('job_steps')
           .select(
             'id, job_id, seq, process_id, step_type, machine_id, status, queue_position, planned_start, planned_end, est_minutes, planned_qty, version, ' +
+              'actual_start, resumed_at, run_minutes, ' +
               'job:jobs!inner(id, job_no, title, due_date, is_at_risk, status, order:sales_orders(doc_no, customer_po_no, customer:customers(name)))',
           )
           .eq('job.status', 'in_production')
@@ -350,5 +358,108 @@ export function useReschedule() {
       if (error) throw error
     },
     onSettled: () => Promise.all([qc.invalidateQueries({ queryKey: boardKey }), qc.invalidateQueries({ queryKey: loadKey })]),
+  })
+}
+
+// Shop floor (Sprint 5) ------------------------------------------------------------
+
+export type DowntimeReason =
+  | 'breakdown' | 'planned_maintenance' | 'no_operator' | 'no_material' | 'waiting_approval' | 'changeover' | 'other'
+
+export type Downtime = {
+  id: string
+  machine_id: string
+  reason: DowntimeReason
+  note: string | null
+  started_at: string
+  expected_end: string | null
+}
+
+export function useOpenDowntimes() {
+  const key = useTenantKey('downtimes')
+  return useQuery({
+    queryKey: key,
+    refetchInterval: 30_000,
+    queryFn: async () => {
+      const { data, error } = await db()
+        .from('machine_downtimes')
+        .select('id, machine_id, reason, note, started_at, expected_end')
+        .is('ended_at', null)
+      if (error) throw error
+      return data as Downtime[]
+    },
+  })
+}
+
+export type CompleteResult = { job_done: boolean; waste_pct: number | null; waste_over: boolean; short_by: number }
+
+export const useStartStep = () => usePlanCommand<{ p_step: string }>('start_step')
+export const usePauseStep = () => usePlanCommand<{ p_step: string; p_reason?: string | null }>('pause_step')
+export const useStartDowntime = () =>
+  usePlanCommand<{ p_machine: string; p_reason: DowntimeReason; p_expected_minutes?: number | null; p_note?: string | null }>('start_downtime')
+export const useEndDowntime = () => usePlanCommand<{ p_machine: string }>('end_downtime')
+
+export const useCompleteStep = () =>
+  usePlanCommand<{ p_step: string; p_good: number; p_waste: number; p_reason?: string | null }, CompleteResult>('complete_step')
+
+// Minutes a step has actually run, including the running segment.
+export function runMinutes(s: Pick<BoardStep, 'run_minutes' | 'resumed_at' | 'status'>, now = Date.now()) {
+  const live = s.status === 'in_progress' && s.resumed_at ? (now - new Date(s.resumed_at).getTime()) / 60_000 : 0
+  return Number(s.run_minutes ?? 0) + live
+}
+
+// Job detail -----------------------------------------------------------------------
+
+export type JobDetail = Omit<Job, 'steps'> & {
+  priority: number
+  planned_finish_at: string | null
+  is_at_risk: boolean
+  released_at: string | null
+  order: { id: string; doc_no: string; customer_po_no: string; customer: { name: string } | null; items: { id: string; line_no: number; description: string; qty: number }[] }
+  steps: (JobStep & {
+    status: StepStatus
+    planned_start: string | null
+    planned_end: string | null
+    actual_start: string | null
+    actual_end: string | null
+    good_qty: number
+    waste_qty: number
+    run_minutes: number
+    resumed_at: string | null
+  })[]
+}
+
+export type ActivityLog = { id: number; action: string; detail: Record<string, unknown>; actor_id: string | null; created_at: string }
+
+export function useJobDetail(jobId: string) {
+  const key = useTenantKey('job', jobId)
+  return useQuery({
+    queryKey: key,
+    refetchInterval: 30_000,
+    queryFn: async () => {
+      const [job, logs] = await Promise.all([
+        db()
+          .from('jobs')
+          .select(
+            'id, job_no, sales_order_id, title, qty, status, priority, due_date, workflow_version, created_at, planned_finish_at, is_at_risk, released_at, ' +
+              'order:sales_orders(id, doc_no, customer_po_no, customer:customers(name), items:sales_order_items(id, line_no, description, qty)), ' +
+              'lines:job_order_items(sales_order_item_id, qty), ' +
+              'steps:job_steps(id, seq, process_id, step_type, machine_id, planned_qty, n_up, passes, est_minutes, note, status, ' +
+              'planned_start, planned_end, actual_start, actual_end, good_qty, waste_qty, run_minutes, resumed_at)',
+          )
+          .eq('id', jobId)
+          .order('seq', { referencedTable: 'job_steps' })
+          .single(),
+        db()
+          .from('job_activity_logs')
+          .select('id, action, detail, actor_id, created_at')
+          .eq('job_id', jobId)
+          .order('created_at', { ascending: false })
+          .limit(100),
+      ])
+      if (job.error) throw job.error
+      if (logs.error) throw logs.error
+      return { job: job.data as unknown as JobDetail, logs: logs.data as ActivityLog[] }
+    },
   })
 }

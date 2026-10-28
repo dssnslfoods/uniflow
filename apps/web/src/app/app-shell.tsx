@@ -1,7 +1,7 @@
 import { useState, type ButtonHTMLAttributes } from 'react'
 import { Link, Outlet } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import { Building2, CheckCheck, Factory, FileText, Gauge, KanbanSquare, Languages, Layers, LifeBuoy, LogOut, Moon, Sun, Users, Workflow } from 'lucide-react'
+import { Building2, CheckCheck, Factory, FileText, Gauge, Hammer, KanbanSquare, Languages, Layers, LifeBuoy, LogOut, Moon, Sun, Users, Workflow } from 'lucide-react'
 import { useAuth } from './auth'
 import { useMyTenants, useSupportSession, useSwitchTenant } from '@/modules/platform/api'
 import { usePendingApprovals } from '@/modules/production/api'
@@ -17,6 +17,7 @@ const navGroups: { key?: string; items: NavItem[] }[] = [
     items: [
       { to: '/dashboard', key: 'dashboard', Icon: Gauge, soon: true },
       { to: '/board', key: 'board', Icon: KanbanSquare },
+      { to: '/floor', key: 'floor', Icon: Hammer },
       { to: '/orders', key: 'orders', Icon: FileText },
       { to: '/approvals', key: 'approvals', Icon: CheckCheck },
     ],
@@ -64,7 +65,7 @@ export function AppShell() {
 
   return (
     <div className="flex min-h-full flex-col md:flex-row">
-      <aside className="flex shrink-0 flex-col gap-1 border-b border-border bg-surface px-3 py-3 md:sticky md:top-0 md:h-screen md:w-60 md:border-b-0 md:border-r">
+      <aside className="flex shrink-0 flex-col gap-1 print:hidden border-b border-border bg-surface px-3 py-3 md:sticky md:top-0 md:h-screen md:w-60 md:border-b-0 md:border-r">
         <div className="flex items-center gap-2 px-2 pb-3">
           <div className="grid size-8 place-items-center rounded-lg bg-brand text-sm font-bold text-brand-fg">U</div>
           <div className="min-w-0">
@@ -147,7 +148,7 @@ export function AppShell() {
         </div>
       </aside>
 
-      <main className="min-w-0 flex-1 px-4 py-6 md:px-8">
+      <main className="min-w-0 flex-1 px-4 py-6 md:px-8 print:p-0">
         {current?.is_support && (
           <div className="mb-5 flex flex-wrap items-center gap-3 rounded-lg border border-status-paused/40 bg-status-paused/10 px-4 py-2.5 text-sm text-status-paused">
             <LifeBuoy className="size-4" aria-hidden />
