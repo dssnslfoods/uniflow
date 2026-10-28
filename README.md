@@ -63,6 +63,20 @@ explicitly — an unanswered prompt defaults to **Y**).
 
 Edge Functions: `supabase functions deploy invite-member --use-api`.
 
+## Claude Code commands
+
+Type `/` in Claude Code to pick one (definitions in `.claude/commands/`):
+
+| Command | Does |
+|---|---|
+| `/next` | What is done, what is pending, and 2–3 suggested next steps |
+| `/sprint [scope]` | Run the standard sprint flow: migration → tests → push → UI → deploy → commit |
+| `/db-test` | Migrations + pgTAP tests on a throwaway local PostgreSQL |
+| `/push-db` | Dry-run, test, then push migrations to the hosted project |
+| `/deploy` | Typecheck, build, deploy to Firebase Hosting, check the live site |
+| `/status` | Git, migrations, live site and production data at a glance |
+| `/demo-reset [shop]` | Remove `DEMO-` POs and their jobs (asks before deleting) |
+
 ## Conventions
 
 - Every table has `tenant_id` (defaults from the JWT) + `unique (tenant_id, id)`; children use composite FKs so rows can never reference another tenant.
