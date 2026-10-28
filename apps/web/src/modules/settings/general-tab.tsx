@@ -28,7 +28,7 @@ function GeneralForm({ name: initialName, plan, settings }: { name: string; plan
   const [form, setForm] = useState<TenantSettings>({
     timezone: settings.timezone ?? 'Asia/Bangkok',
     allow_self_approval: !!settings.allow_self_approval,
-    features: { stock_gate: !!settings.features?.stock_gate },
+    features: { stock_gate: !!settings.features?.stock_gate, proof_gate: !!settings.features?.proof_gate },
     overhead_pct: Number(settings.overhead_pct ?? 0),
     doc_numbering: {
       year: settings.doc_numbering?.year ?? 'ad',
@@ -107,6 +107,17 @@ function GeneralForm({ name: initialName, plan, settings }: { name: string; plan
           <span>
             <span className="block font-medium">{t('settings.stockGate')}</span>
             <span className="text-xs text-muted">{t('settings.stockGateHint')}</span>
+          </span>
+        </label>
+      )}
+
+      {modules.has('proof') && (
+        <label className="flex items-start gap-3 rounded-lg border border-border p-3">
+          <input type="checkbox" className="mt-1 accent-[var(--brand)]" checked={!!form.features?.proof_gate} disabled={!canEdit}
+            onChange={(e) => setForm((f) => ({ ...f, features: { ...f.features, proof_gate: e.target.checked } }))} />
+          <span>
+            <span className="block font-medium">{t('settings.proofGate')}</span>
+            <span className="text-xs text-muted">{t('settings.proofGateHint')}</span>
           </span>
         </label>
       )}

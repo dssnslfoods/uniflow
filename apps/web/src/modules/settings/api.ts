@@ -28,7 +28,7 @@ export function useTenant() {
 
 // Optional modules a super admin switches on per shop; the core flow is always on.
 export type ModuleKey = 'outsource' | 'delivery' | 'inventory' | 'proof' | 'costing' | 'reports'
-export const availableModules: ModuleKey[] = ['outsource', 'delivery', 'inventory']
+export const availableModules: ModuleKey[] = ['outsource', 'delivery', 'inventory', 'proof']
 
 export function useModules() {
   const tenant = useTenant()

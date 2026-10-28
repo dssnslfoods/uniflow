@@ -64,6 +64,7 @@ from app.job_steps s join app.vendors v on v.tenant_id = s.tenant_id;
 insert into app.deliveries (tenant_id, doc_no, sales_order_id) select tenant_id, 'DO-T', id from app.sales_orders;
 insert into app.delivery_items (tenant_id, delivery_id, job_id, qty)
 select d.tenant_id, d.id, j.id, 1 from app.deliveries d join app.jobs j on j.sales_order_id = d.sales_order_id;
+insert into app.proofs (tenant_id, job_id, version, file_path) select tenant_id, id, 1, tenant_id || '/p.pdf' from app.jobs;
 
 -- Every app table has RLS on ---------------------------------------------------
 select is_empty($$

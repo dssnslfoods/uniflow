@@ -35,6 +35,7 @@ const OutsourcePage = lazy(() => import('@/modules/outsource/outsource-page').th
 const DeliveryPage = lazy(() => import('@/modules/delivery/delivery-page').then((m) => ({ default: m.DeliveryPage })))
 const DeliveryNotePage = lazy(() => import('@/modules/delivery/delivery-page').then((m) => ({ default: m.DeliveryNotePage })))
 const InventoryPage = lazy(() => import('@/modules/inventory/inventory-page').then((m) => ({ default: m.InventoryPage })))
+const ProofsPage = lazy(() => import('@/modules/proof/proofs-page').then((m) => ({ default: m.ProofsPage })))
 const DashboardPage = lazy(() => import('@/modules/dashboard/dashboard-page').then((m) => ({ default: m.DashboardPage })))
 
 type Ctx = { auth: AuthState }
@@ -173,6 +174,7 @@ const routeTree = rootRoute.addChildren([
     page('/outsource', gated('outsource', OutsourcePage)),
     page('/deliveries', gated('delivery', DeliveryPage)),
     page('/inventory', gated('inventory', InventoryPage)),
+    page('/proofs', gated('proof', ProofsPage)),
     deliveryNoteRoute,
     machinesRoute,
     page('/processes', ProcessesPage),
