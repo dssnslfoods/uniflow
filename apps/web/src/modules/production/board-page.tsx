@@ -36,13 +36,13 @@ import {
   useBoard,
   useMachineLoad,
   useMoveStep,
-  useReleaseJobs,
   useOpenDowntimes,
   useReschedule,
   useSuggestMachines,
   type BoardStep,
   type LoadRow,
 } from './api'
+import { useRelease } from './use-release'
 
 // Column ids: 'unscheduled' | 'outsource' | 'manual' | 'm:<machine id>' (design §8.1)
 type ColumnId = string
@@ -70,7 +70,7 @@ export function BoardPage() {
   const processes = useProcesses()
   const links = useMachineProcesses()
   const move = useMoveStep()
-  const release = useReleaseJobs()
+  const release = useRelease()
   const reschedule = useReschedule()
   const canMove = hasRole('admin', 'manager', 'supervisor')
 
@@ -297,13 +297,7 @@ export function BoardPage() {
             size="sm"
             loading={release.isPending}
             onClick={() =>
-              release.mutate(
-                { p_jobs: approved.map((j) => j.id) },
-                {
-                  onSuccess: (n) => toast({ tone: 'success', message: t('board.released', { n }) }),
-                  onError: (e) => toast({ tone: 'error', message: errorMessage(e) }),
-                },
-              )
+              release.run(approved.map((j) => j.id))
             }
           >
             {t('board.releaseAll')}

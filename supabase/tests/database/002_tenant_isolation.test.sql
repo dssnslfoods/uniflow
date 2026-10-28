@@ -40,6 +40,9 @@ begin
   perform api.start_downtime(id, 'other', 30) from app.machines;
   insert into app.machine_operators (machine_id, membership_id)
     select v_mach, id from app.memberships where user_id = p_admin;
+  perform api.receive_stock(v_mat, 100, 2);
+  perform api.set_job_materials(id, jsonb_build_array(jsonb_build_object('material_id', v_mat, 'required_qty', 10))) from app.jobs;
+  perform api.issue_material(id, v_mat, 5) from app.jobs;
 end $$;
 
 create temp table t_ctx as

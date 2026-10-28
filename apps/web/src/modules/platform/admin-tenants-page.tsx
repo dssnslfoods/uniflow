@@ -10,7 +10,8 @@ import { Input, Select } from '@/shared/ui/input'
 import { EmptyState, ErrorNote, ListSkeleton, PageHeader } from '@/shared/ui/page'
 import { useToast } from '@/shared/ui/toast'
 import { formatDate } from '../orders/format'
-import { useAdminTenants, useAdminUpdateTenant, useSeedDemo, useSupportSession, type AdminTenant } from './api'
+import { availableModules, type ModuleKey } from '../settings/api'
+import { useAdminSetModules, useAdminTenants, useAdminUpdateTenant, useSeedDemo, useSupportSession, type AdminTenant } from './api'
 
 const plans = ['trial', 'starter', 'pro', 'business']
 const statuses: AdminTenant['status'][] = ['trial', 'active', 'suspended', 'closed']
@@ -25,6 +26,19 @@ export function AdminTenantsPage() {
   const update = useAdminUpdateTenant()
   const support = useSupportSession()
   const seed = useSeedDemo()
+  const setModules = useAdminSetModules()
+
+  // Core (orders → plan → approve → board → floor) is always on; optional modules switch per shop.
+  function toggleModule(x: AdminTenant, m: ModuleKey) {
+    const next = x.modules.includes(m) ? x.modules.filter((k) => k !== m) : [...x.modules, m]
+    setModules.mutate(
+      { id: x.tenant_id, modules: next },
+      {
+        onSuccess: () => toast({ tone: 'success', message: `${t('module.saved')} · ${x.name}` }),
+        onError: (e) => toast({ tone: 'error', message: errorMessage(e) }),
+      },
+    )
+  }
 
   function seedDemo(x: AdminTenant) {
     if (!window.confirm(t('admin.seedConfirm', { name: x.name }))) return
@@ -135,6 +149,19 @@ export function AdminTenantsPage() {
                   <td className="px-4 py-3">
                     <div className="font-medium">{x.name}</div>
                     <div className="text-xs text-muted">{x.owner_email ?? '—'} · {formatDate(x.created_at)}</div>
+                    <div className="mt-1.5 flex flex-wrap gap-1" role="group" aria-label={t('module.title')}>
+                      <span className="rounded-full bg-surface-2 px-2 py-0.5 text-[11px] text-muted">{t('module.core')}</span>
+                      {availableModules.map((m) => {
+                        const on = x.modules.includes(m)
+                        return (
+                          <button key={m} type="button" aria-pressed={on} disabled={setModules.isPending} onClick={() => toggleModule(x, m)}
+                            className={cn('rounded-full border px-2 py-0.5 text-[11px] transition-colors',
+                              on ? 'border-brand bg-brand/10 font-medium text-brand' : 'border-dashed border-border text-muted hover:border-brand/50')}>
+                            {on ? '✓ ' : '+ '}{t(`module.${m}`)}
+                          </button>
+                        )
+                      })}
+                    </div>
                   </td>
                   <td className="px-4 py-3">
                     <Select aria-label={t('admin.plan')} className="h-8 w-28 text-xs" value={x.plan_id} onChange={(e) => change(x.tenant_id, { plan: e.target.value })}>

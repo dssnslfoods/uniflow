@@ -82,4 +82,5 @@ Type `/` in Claude Code to pick one (definitions in `.claude/commands/`):
 - Every table has `tenant_id` (defaults from the JWT) + `unique (tenant_id, id)`; children use composite FKs so rows can never reference another tenant.
 - New tables: `select app.apply_tenant_policies('app.<table>', '{roles that write}')` and `select app.add_standard_triggers(...)`. The isolation test (`002_tenant_isolation`) automatically checks every table in `app`.
 - Business errors: `perform app.fail('<i18n.key>')` → client shows `errors.<i18n.key>`.
+- Optional modules (`app.known_modules()`): commands of an optional feature start with `perform app.require_module('<key>')`; the web app hides its menu via `useModules()` and wraps its pages in `<ModuleGate>`. Super admins switch modules per shop in the admin console (`api.admin_set_modules`).
 - Master data with history is soft-deleted (`deleted_at`), never hard-deleted.

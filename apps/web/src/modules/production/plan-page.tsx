@@ -24,7 +24,6 @@ import {
   useCoverage,
   useCreateJob,
   useOrderJobs,
-  useReleaseJobs,
   useSaveJob,
   useEditWorkflow,
   useSubmitPlan,
@@ -35,6 +34,8 @@ import {
   type JobStep,
 } from './api'
 import { JobStatusPill } from './job-status'
+import { useRelease } from './use-release'
+import { JobMaterialsEditor } from '../inventory/job-materials'
 
 const fmtQty = (n: number) => Number(n).toLocaleString()
 
@@ -68,7 +69,7 @@ export function PlanPage({ orderId }: { orderId: string }) {
   const jobIds = useMemo(() => (jobs.data ?? []).map((j) => j.id), [jobs.data])
   const approvals = useApprovals(jobIds)
   const submit = useSubmitPlan()
-  const release = useReleaseJobs()
+  const release = useRelease()
   const [creating, setCreating] = useState(false)
   const [dirty, setDirty] = useState<Set<string>>(new Set())
   const canPlan = hasRole('admin', 'manager', 'supervisor')
@@ -94,15 +95,7 @@ export function PlanPage({ orderId }: { orderId: string }) {
   const covered = lines.length > 0 && lines.every((l) => Number(l.remaining_qty) === 0)
   const approved = live.filter((j) => j.status === 'approved')
 
-  function onRelease(ids: string[]) {
-    release.mutate(
-      { p_jobs: ids },
-      {
-        onSuccess: (n) => toast({ tone: 'success', message: t('board.released', { n }) }),
-        onError: (e) => toast({ tone: 'error', message: errorMessage(e) }),
-      },
-    )
-  }
+  const onRelease = release.run
 
   const blocker = !planning.length
     ? t('plan.blockNothing')
@@ -371,6 +364,14 @@ function JobCard({ job, lines, approvals, canPlan, onDirty }: CardProps) {
   const seqRows = withSeq(rows)
   const estimates = seqRows.map((r) => estimate(r, r.machine_id ? machineById.get(r.machine_id) : undefined, processById.get(r.process_id)))
   const totalMinutes = estimates.reduce<number>((s, m) => s + (m ?? 0), 0)
+  // Paper for the first sheet-fed step: passes re-use the same sheet, so they don't add paper.
+  const sheetHint = useMemo(() => {
+    const r = seqRows.find((x) => x.step_type === 'internal' && processById.get(x.process_id)?.capacity_unit === 'sheet')
+    if (!r) return null
+    const p = processById.get(r.process_id)!
+    const m = r.machine_id ? machineById.get(r.machine_id) : undefined
+    return { sheets: Math.ceil(Math.ceil(r.planned_qty / Math.max(r.n_up, 1)) * (1 + p.default_running_waste_pct / 100) + (m?.makeready_waste_units ?? 0)) }
+  }, [seqRows, processById, machineById])
 
   const lastDecision = approvals.find((a) => a.action !== 'submit')
   const sentBack = (job.status === 'planning' || job.status === 'on_hold') && lastDecision && (lastDecision.action === 'reject' || lastDecision.action === 'request_change')
@@ -600,6 +601,8 @@ function JobCard({ job, lines, approvals, canPlan, onDirty }: CardProps) {
           </div>
         )}
       </div>
+
+      <JobMaterialsEditor jobId={job.id} editable={canPlan && job.status !== 'completed'} sheetHint={sheetHint} />
 
       {flowEdit && (
         <footer className="flex flex-wrap items-center justify-between gap-2 border-t border-border bg-status-paused/5 px-5 py-3">

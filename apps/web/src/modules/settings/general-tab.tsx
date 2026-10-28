@@ -6,7 +6,7 @@ import { Button } from '@/shared/ui/button'
 import { Field, Input, Select } from '@/shared/ui/input'
 import { ErrorNote, ListSkeleton } from '@/shared/ui/page'
 import { useToast } from '@/shared/ui/toast'
-import { useTenant, useUpdateSettings, type TenantSettings } from './api'
+import { useModules, useTenant, useUpdateSettings, type TenantSettings } from './api'
 
 const zones = ['Asia/Bangkok', 'Asia/Ho_Chi_Minh', 'Asia/Jakarta', 'Asia/Kuala_Lumpur', 'Asia/Singapore', 'Asia/Yangon', 'Asia/Vientiane', 'Asia/Phnom_Penh']
 
@@ -23,10 +23,12 @@ function GeneralForm({ name: initialName, plan, settings }: { name: string; plan
   const toast = useToast()
   const save = useUpdateSettings()
   const canEdit = hasRole('admin')
+  const modules = useModules()
   const [name, setName] = useState(initialName)
   const [form, setForm] = useState<TenantSettings>({
     timezone: settings.timezone ?? 'Asia/Bangkok',
     allow_self_approval: !!settings.allow_self_approval,
+    features: { stock_gate: !!settings.features?.stock_gate },
     overhead_pct: Number(settings.overhead_pct ?? 0),
     doc_numbering: {
       year: settings.doc_numbering?.year ?? 'ad',
@@ -97,6 +99,17 @@ function GeneralForm({ name: initialName, plan, settings }: { name: string; plan
           <span className="text-xs text-muted">{t('settings.selfApprovalHint')}</span>
         </span>
       </label>
+
+      {modules.has('inventory') && (
+        <label className="flex items-start gap-3 rounded-lg border border-border p-3">
+          <input type="checkbox" className="mt-1 accent-[var(--brand)]" checked={!!form.features?.stock_gate} disabled={!canEdit}
+            onChange={(e) => setForm((f) => ({ ...f, features: { ...f.features, stock_gate: e.target.checked } }))} />
+          <span>
+            <span className="block font-medium">{t('settings.stockGate')}</span>
+            <span className="text-xs text-muted">{t('settings.stockGateHint')}</span>
+          </span>
+        </label>
+      )}
 
       {save.error && <ErrorNote>{errorMessage(save.error)}</ErrorNote>}
       {canEdit && (

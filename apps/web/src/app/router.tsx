@@ -11,6 +11,8 @@ import type { AuthState } from './auth'
 import { AppShell } from './app-shell'
 import { LoginPage } from '@/modules/platform/login-page'
 import { OnboardingPage } from '@/modules/platform/onboarding-page'
+import { ModuleGate } from '@/shared/ui/module-gate'
+import type { ModuleKey } from '@/modules/settings/api'
 
 
 // Pages load on demand (one chunk each); login and onboarding stay in the main bundle.
@@ -32,6 +34,7 @@ const SettingsPage = lazy(() => import('@/modules/settings/settings-page').then(
 const OutsourcePage = lazy(() => import('@/modules/outsource/outsource-page').then((m) => ({ default: m.OutsourcePage })))
 const DeliveryPage = lazy(() => import('@/modules/delivery/delivery-page').then((m) => ({ default: m.DeliveryPage })))
 const DeliveryNotePage = lazy(() => import('@/modules/delivery/delivery-page').then((m) => ({ default: m.DeliveryNotePage })))
+const InventoryPage = lazy(() => import('@/modules/inventory/inventory-page').then((m) => ({ default: m.InventoryPage })))
 const DashboardPage = lazy(() => import('@/modules/dashboard/dashboard-page').then((m) => ({ default: m.DashboardPage })))
 
 type Ctx = { auth: AuthState }
@@ -91,6 +94,7 @@ const machinesRoute = createRoute({
 // Generic keeps the literal path so typed <Link to> knows every route.
 const page = <P extends string>(path: P, component: RouteComponent) =>
   createRoute({ getParentRoute: () => appRoute, path, component })
+const gated = (module: ModuleKey, Page: RouteComponent) => () => <ModuleGate module={module}><Page /></ModuleGate>
 
 const ordersRoute = page('/orders', OrdersPage)
 const newOrderRoute = page('/orders/new', NewOrderPage)
@@ -144,7 +148,7 @@ const deliveryNoteRoute = createRoute({
   path: '/deliveries/$deliveryId',
   component: function DeliveryNoteRoute() {
     const { deliveryId } = deliveryNoteRoute.useParams()
-    return <DeliveryNotePage deliveryId={deliveryId} />
+    return <ModuleGate module="delivery"><DeliveryNotePage deliveryId={deliveryId} /></ModuleGate>
   },
 })
 
@@ -166,8 +170,9 @@ const routeTree = rootRoute.addChildren([
     page('/admin', AdminTenantsPage),
     page('/settings', SettingsPage),
     page('/dashboard', DashboardPage),
-    page('/outsource', OutsourcePage),
-    page('/deliveries', DeliveryPage),
+    page('/outsource', gated('outsource', OutsourcePage)),
+    page('/deliveries', gated('delivery', DeliveryPage)),
+    page('/inventory', gated('inventory', InventoryPage)),
     deliveryNoteRoute,
     machinesRoute,
     page('/processes', ProcessesPage),

@@ -1,19 +1,20 @@
 import { Suspense, useState, type ButtonHTMLAttributes } from 'react'
 import { Link, Outlet } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import { Building2, CheckCheck, Settings, Send, Truck, Factory, FileText, Gauge, Hammer, KanbanSquare, Languages, Layers, LifeBuoy, LogOut, Moon, Sun, Users, Workflow } from 'lucide-react'
+import { Building2, CheckCheck, Settings, Send, Truck, Factory, FileText, Gauge, Hammer, KanbanSquare, Languages, Layers, LifeBuoy, LogOut, Moon, Package, Sun, Users, Workflow } from 'lucide-react'
 import { useAuth } from './auth'
 import { useMyTenants, useSupportSession, useSwitchTenant } from '@/modules/platform/api'
 import { usePendingApprovals } from '@/modules/production/api'
 import { NotificationBell } from '@/modules/notifications/notification-bell'
 import { useTenantRealtime } from './realtime'
+import { useModules, type ModuleKey } from '@/modules/settings/api'
 import { ListSkeleton } from '@/shared/ui/page'
 import { setLanguage } from '@/shared/i18n'
 import { useToast } from '@/shared/ui/toast'
 import { errorMessage } from '@/lib/errors'
 import { cn } from '@/lib/utils'
 
-type NavItem = { to: string; key: string; Icon: typeof Factory; soon?: boolean }
+type NavItem = { to: string; key: string; Icon: typeof Factory; soon?: boolean; module?: ModuleKey }
 
 const navGroups: { key?: string; items: NavItem[] }[] = [
   {
@@ -21,8 +22,9 @@ const navGroups: { key?: string; items: NavItem[] }[] = [
       { to: '/dashboard', key: 'dashboard', Icon: Gauge },
       { to: '/board', key: 'board', Icon: KanbanSquare },
       { to: '/floor', key: 'floor', Icon: Hammer },
-      { to: '/outsource', key: 'outsource', Icon: Send },
-      { to: '/deliveries', key: 'deliveries', Icon: Truck },
+      { to: '/outsource', key: 'outsource', Icon: Send, module: 'outsource' },
+      { to: '/deliveries', key: 'deliveries', Icon: Truck, module: 'delivery' },
+      { to: '/inventory', key: 'inventory', Icon: Package, module: 'inventory' },
       { to: '/orders', key: 'orders', Icon: FileText },
       { to: '/approvals', key: 'approvals', Icon: CheckCheck },
     ],
@@ -65,8 +67,10 @@ export function AppShell() {
   const isPlatformAdmin = !!auth.claims?.platform_admin
   const hasTenant = !!auth.claims?.tenant_id
   // Platform admins without a tenant see only the console; with one, the console is added at the end.
+  const modules = useModules()
+  const shopGroups = navGroups.map((g) => ({ ...g, items: g.items.filter((i) => !i.module || modules.has(i.module)) }))
   const groups = [
-    ...(hasTenant ? navGroups : []),
+    ...(hasTenant ? shopGroups : []),
     ...(isPlatformAdmin ? [{ key: 'platform', items: [{ to: '/admin', key: 'admin', Icon: Building2 }] }] : []),
   ]
 

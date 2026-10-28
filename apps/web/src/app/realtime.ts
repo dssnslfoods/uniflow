@@ -4,7 +4,7 @@ import { supabase } from '@/lib/supabase'
 import { useAuth } from './auth'
 
 // Everything a board change can affect; refetched together.
-const keys = ['board', 'machine-load', 'downtimes', 'job', 'jobs', 'dashboard', 'notifications', 'outsource', 'vendor-performance']
+const keys = ['board', 'machine-load', 'downtimes', 'job', 'jobs', 'dashboard', 'notifications', 'outsource', 'vendor-performance', 'stock']
 
 // Private per-tenant topic fed by app.broadcast_board() (design §6.8). One "changed" event per
 // transaction; bursts are coalesced before refetching. Polling stays as the fallback.

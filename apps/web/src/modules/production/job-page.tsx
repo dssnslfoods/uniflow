@@ -16,6 +16,7 @@ import { useAuth } from '@/app/auth'
 import { Input } from '@/shared/ui/input'
 import { useToast } from '@/shared/ui/toast'
 import { useAddRework, useProfileNames, formatMinutes, runMinutes, useJobDetail, type JobDetail } from './api'
+import { JobMaterialsIssue } from '../inventory/job-materials'
 import { JobStatusPill } from './job-status'
 
 const fmtTime = (iso: string | null) =>
@@ -87,6 +88,7 @@ export function JobPage({ jobId }: { jobId: string }) {
       </dl>
 
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_320px]">
+        <div className="flex min-w-0 flex-col gap-5">
         <section className="rounded-[var(--radius-card)] border border-border bg-surface p-5">
           <h2 className="mb-3 font-semibold">{t('job.flow')}</h2>
           <ol className="flex flex-col gap-2">
@@ -136,6 +138,8 @@ export function JobPage({ jobId }: { jobId: string }) {
             ))}
           </div>
         </section>
+        <JobMaterialsIssue jobId={job.id} active={['approved', 'in_production', 'pending_approval', 'on_hold', 'ready_to_deliver'].includes(job.status)} />
+        </div>
 
         <aside className="rounded-[var(--radius-card)] border border-border bg-surface p-5">
           <h2 className="mb-3 font-semibold">{t('job.activity')}</h2>

@@ -125,9 +125,10 @@ function useInvalidatePlan() {
   const outsourceKey = useTenantKey('outsource')
   const vendorKey = useTenantKey('vendor-performance')
   const deliveriesKey = useTenantKey('deliveries')
+  const stockKey = useTenantKey('stock')
   return () =>
     Promise.all(
-      [jobsKey, coverageKey, approvalsKey, ordersKey, boardKey, loadKey, downKey, jobKey, outsourceKey, vendorKey, deliveriesKey].map((queryKey) =>
+      [jobsKey, coverageKey, approvalsKey, ordersKey, boardKey, loadKey, downKey, jobKey, outsourceKey, vendorKey, deliveriesKey, stockKey].map((queryKey) =>
         qc.invalidateQueries({ queryKey }),
       ),
     )
@@ -262,7 +263,7 @@ export function useProfileNames(ids: string[]) {
 
 // Release & board (Sprint 4) ------------------------------------------------------
 
-export const useReleaseJobs = () => usePlanCommand<{ p_jobs: string[] }>('release_jobs')
+export const useReleaseJobs = () => usePlanCommand<{ p_jobs: string[]; p_override_reason?: string | null }>('release_jobs')
 
 export type StepStatus = 'pending' | 'ready' | 'in_progress' | 'paused' | 'done' | 'skipped' | 'failed'
 

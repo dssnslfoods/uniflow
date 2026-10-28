@@ -5,6 +5,7 @@ import { useList, useTenantKey } from '@/shared/data'
 import type { Role } from '@/lib/claims'
 
 export type TenantSettings = {
+  features?: { stock_gate?: boolean; proof_gate?: boolean }
   timezone: string
   allow_self_approval: boolean
   overhead_pct: number
@@ -18,11 +19,21 @@ export function useTenant() {
     queryKey: key,
     enabled: !!claims?.tenant_id,
     queryFn: async () => {
-      const { data, error } = await db().from('tenants').select('id, name, plan_id, settings').eq('id', claims!.tenant_id!).single()
+      const { data, error } = await db().from('tenants').select('id, name, plan_id, settings, modules').eq('id', claims!.tenant_id!).single()
       if (error) throw error
-      return data as { id: string; name: string; plan_id: string; settings: TenantSettings }
+      return data as { id: string; name: string; plan_id: string; settings: TenantSettings; modules: ModuleKey[] }
     },
   })
+}
+
+// Optional modules a super admin switches on per shop; the core flow is always on.
+export type ModuleKey = 'outsource' | 'delivery' | 'inventory' | 'proof' | 'costing' | 'reports'
+export const availableModules: ModuleKey[] = ['outsource', 'delivery', 'inventory']
+
+export function useModules() {
+  const tenant = useTenant()
+  const mods = tenant.data?.modules
+  return { ready: !!mods, has: (m: ModuleKey) => !!mods?.includes(m) }
 }
 
 export function useUpdateSettings() {

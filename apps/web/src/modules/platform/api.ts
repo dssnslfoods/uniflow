@@ -68,6 +68,7 @@ export type AdminTenant = {
   active_jobs: number
   owner_email: string | null
   supporting: boolean
+  modules: string[]
 }
 
 export function useAdminTenants(enabled: boolean) {
@@ -123,5 +124,16 @@ export function useSeedDemo() {
       return data as { skipped: boolean; orders?: number; jobs?: number }
     },
     onSettled: () => qc.invalidateQueries(),
+  })
+}
+
+export function useAdminSetModules() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ id, modules }: { id: string; modules: string[] }) => {
+      const { error } = await rpc().rpc('admin_set_modules', { p_tenant: id, p_modules: modules })
+      if (error) throw error
+    },
+    onSettled: () => Promise.all([qc.invalidateQueries({ queryKey: ['admin-tenants'] }), qc.invalidateQueries({ queryKey: ['tenant'] })]),
   })
 }
