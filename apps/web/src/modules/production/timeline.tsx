@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { appLocale } from '@/shared/locale'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from '@tanstack/react-router'
 import { cn } from '@/lib/utils'
@@ -52,8 +53,8 @@ export function Timeline({
   }, [steps, machines, downMachines, t])
 
   const pct = (ms: number) => ((Math.min(Math.max(ms, start), end) - start) / (end - start)) * 100
-  const dayFmt = new Intl.DateTimeFormat(undefined, { weekday: 'short', day: 'numeric', month: 'short' })
-  const timeFmt = new Intl.DateTimeFormat(undefined, { hour: '2-digit', minute: '2-digit' })
+  const dayFmt = new Intl.DateTimeFormat(appLocale(), { weekday: 'short', day: 'numeric', month: 'short' })
+  const timeFmt = new Intl.DateTimeFormat(appLocale(), { hour: '2-digit', minute: '2-digit' })
   const ticks = Array.from({ length: days }, (_, i) => start + i * DAY)
 
   return (

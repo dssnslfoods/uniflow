@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import { appLocale } from '@/shared/locale'
 import { useTranslation } from 'react-i18next'
 import { Link } from '@tanstack/react-router'
 import { CheckCircle2, Hand, OctagonAlert, Pause, Play, Power, X } from 'lucide-react'
@@ -142,7 +143,7 @@ export function FloorPage({ focusStepId }: { focusStepId?: string }) {
                 <OctagonAlert className="size-6" aria-hidden />
                 {t('floor.machineDown', {
                   reason: t(`downtime.${down.reason}`),
-                  at: new Date(down.started_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                  at: new Date(down.started_at).toLocaleTimeString(appLocale(), { hour: '2-digit', minute: '2-digit' }),
                 })}
               </p>
               {down.note && <p className="text-status-risk">{down.note}</p>}
@@ -242,7 +243,7 @@ function StepSummary({ step, processName, big }: { step: BoardStep; processName?
       <div className="flex items-center gap-2 text-sm text-muted">
         <Link to="/jobs/$jobId" params={{ jobId: step.job_id }} className="font-semibold hover:text-brand">{step.job.job_no}</Link>
         <span>· {t('board.stage', { n: step.seq })}</span>
-        {step.job.due_date && <span className="ml-auto">{t('board.due', { d: new Date(step.job.due_date).toLocaleDateString([], { day: 'numeric', month: 'short' }) })}</span>}
+        {step.job.due_date && <span className="ml-auto">{t('board.due', { d: new Date(step.job.due_date).toLocaleDateString(appLocale(), { day: 'numeric', month: 'short' }) })}</span>}
       </div>
       <p className={cn('font-semibold', big ? 'text-2xl' : 'text-xl')}>{processName}</p>
       <p className={cn('text-muted', big && 'text-lg')}>{step.job.title}</p>

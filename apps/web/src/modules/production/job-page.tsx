@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { appLocale } from '@/shared/locale'
 import { useTranslation } from 'react-i18next'
 import { Link } from '@tanstack/react-router'
 import { AlertTriangle, ArrowLeft, Printer, RotateCcw } from 'lucide-react'
@@ -18,7 +19,7 @@ import { useAddRework, useProfileNames, formatMinutes, runMinutes, useJobDetail,
 import { JobStatusPill } from './job-status'
 
 const fmtTime = (iso: string | null) =>
-  iso ? new Intl.DateTimeFormat(undefined, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }).format(new Date(iso)) : '—'
+  iso ? new Intl.DateTimeFormat(appLocale(), { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }).format(new Date(iso)) : '—'
 
 const stepTone: Record<string, string> = {
   pending: 'border-border',

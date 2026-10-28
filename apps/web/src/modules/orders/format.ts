@@ -1,6 +1,4 @@
-import i18n from '@/shared/i18n'
-
-const locale = () => (i18n.language === 'en' ? 'en-GB' : 'th-TH')
+import { appLocale as locale } from '@/shared/locale'
 
 export const formatMoney = (n: number) =>
   new Intl.NumberFormat(locale(), { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n)

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { appLocale } from '@/shared/locale'
 import { useTranslation } from 'react-i18next'
 import { Link } from '@tanstack/react-router'
 import {
@@ -492,8 +493,8 @@ function fmtWindow(start: string | null, end: string | null) {
   if (!start || !end) return null
   const s = new Date(start)
   const e = new Date(end)
-  const day = new Intl.DateTimeFormat(undefined, { weekday: 'short', day: 'numeric', month: 'short' })
-  const time = new Intl.DateTimeFormat(undefined, { hour: '2-digit', minute: '2-digit' })
+  const day = new Intl.DateTimeFormat(appLocale(), { weekday: 'short', day: 'numeric', month: 'short' })
+  const time = new Intl.DateTimeFormat(appLocale(), { hour: '2-digit', minute: '2-digit' })
   return s.toDateString() === e.toDateString()
     ? `${day.format(s)} ${time.format(s)}–${time.format(e)}`
     : `${day.format(s)} ${time.format(s)} → ${day.format(e)} ${time.format(e)}`
@@ -587,7 +588,7 @@ function SuggestButton({ stepId, currentMachine, onPick, className }: { stepId: 
   const { t } = useTranslation()
   const [open, setOpen] = useState(false)
   const suggestions = useSuggestMachines(open ? stepId : null)
-  const time = new Intl.DateTimeFormat(undefined, { weekday: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+  const time = new Intl.DateTimeFormat(appLocale(), { weekday: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
 
   return (
     <span className={cn('relative', className)} onPointerDown={(e) => e.stopPropagation()}>
