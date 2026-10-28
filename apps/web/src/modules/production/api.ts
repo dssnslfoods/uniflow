@@ -122,9 +122,12 @@ function useInvalidatePlan() {
   const loadKey = useTenantKey('machine-load')
   const downKey = useTenantKey('downtimes')
   const jobKey = useTenantKey('job')
+  const outsourceKey = useTenantKey('outsource')
+  const vendorKey = useTenantKey('vendor-performance')
+  const deliveriesKey = useTenantKey('deliveries')
   return () =>
     Promise.all(
-      [jobsKey, coverageKey, approvalsKey, ordersKey, boardKey, loadKey, downKey, jobKey].map((queryKey) =>
+      [jobsKey, coverageKey, approvalsKey, ordersKey, boardKey, loadKey, downKey, jobKey, outsourceKey, vendorKey, deliveriesKey].map((queryKey) =>
         qc.invalidateQueries({ queryKey }),
       ),
     )

@@ -54,6 +54,13 @@ reset role;
 -- Notifications are written by triggers for other people; add one per member directly.
 insert into app.notifications (tenant_id, user_id, kind)
 select m.tenant_id, m.user_id, 'test' from app.memberships m;
+-- Outsource and delivery rows (their commands need specific step types / statuses).
+insert into app.outsource_orders (tenant_id, doc_no, job_step_id, vendor_id, qty_sent, expected_at, status)
+select s.tenant_id, 'OS-T', s.id, v.id, 1, now() + interval '1 day', 'qc_passed'
+from app.job_steps s join app.vendors v on v.tenant_id = s.tenant_id;
+insert into app.deliveries (tenant_id, doc_no, sales_order_id) select tenant_id, 'DO-T', id from app.sales_orders;
+insert into app.delivery_items (tenant_id, delivery_id, job_id, qty)
+select d.tenant_id, d.id, j.id, 1 from app.deliveries d join app.jobs j on j.sales_order_id = d.sales_order_id;
 
 -- Every app table has RLS on ---------------------------------------------------
 select is_empty($$

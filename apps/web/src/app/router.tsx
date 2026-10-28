@@ -29,6 +29,9 @@ const JobPage = lazy(() => import('@/modules/production/job-page').then((m) => (
 const JobTicketPage = lazy(() => import('@/modules/production/job-page').then((m) => ({ default: m.JobTicketPage })))
 const AdminTenantsPage = lazy(() => import('@/modules/platform/admin-tenants-page').then((m) => ({ default: m.AdminTenantsPage })))
 const SettingsPage = lazy(() => import('@/modules/settings/settings-page').then((m) => ({ default: m.SettingsPage })))
+const OutsourcePage = lazy(() => import('@/modules/outsource/outsource-page').then((m) => ({ default: m.OutsourcePage })))
+const DeliveryPage = lazy(() => import('@/modules/delivery/delivery-page').then((m) => ({ default: m.DeliveryPage })))
+const DeliveryNotePage = lazy(() => import('@/modules/delivery/delivery-page').then((m) => ({ default: m.DeliveryNotePage })))
 const DashboardPage = lazy(() => import('@/modules/dashboard/dashboard-page').then((m) => ({ default: m.DashboardPage })))
 
 type Ctx = { auth: AuthState }
@@ -136,6 +139,15 @@ const jobTicketRoute = createRoute({
   },
 })
 
+const deliveryNoteRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: '/deliveries/$deliveryId',
+  component: function DeliveryNoteRoute() {
+    const { deliveryId } = deliveryNoteRoute.useParams()
+    return <DeliveryNotePage deliveryId={deliveryId} />
+  },
+})
+
 const routeTree = rootRoute.addChildren([
   loginRoute,
   onboardingRoute,
@@ -154,6 +166,9 @@ const routeTree = rootRoute.addChildren([
     page('/admin', AdminTenantsPage),
     page('/settings', SettingsPage),
     page('/dashboard', DashboardPage),
+    page('/outsource', OutsourcePage),
+    page('/deliveries', DeliveryPage),
+    deliveryNoteRoute,
     machinesRoute,
     page('/processes', ProcessesPage),
     page('/customers', CustomersPage),

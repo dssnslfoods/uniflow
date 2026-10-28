@@ -1,7 +1,7 @@
 import { Suspense, useState, type ButtonHTMLAttributes } from 'react'
 import { Link, Outlet } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import { Building2, CheckCheck, Settings, Factory, FileText, Gauge, Hammer, KanbanSquare, Languages, Layers, LifeBuoy, LogOut, Moon, Sun, Users, Workflow } from 'lucide-react'
+import { Building2, CheckCheck, Settings, Send, Truck, Factory, FileText, Gauge, Hammer, KanbanSquare, Languages, Layers, LifeBuoy, LogOut, Moon, Sun, Users, Workflow } from 'lucide-react'
 import { useAuth } from './auth'
 import { useMyTenants, useSupportSession, useSwitchTenant } from '@/modules/platform/api'
 import { usePendingApprovals } from '@/modules/production/api'
@@ -21,6 +21,8 @@ const navGroups: { key?: string; items: NavItem[] }[] = [
       { to: '/dashboard', key: 'dashboard', Icon: Gauge },
       { to: '/board', key: 'board', Icon: KanbanSquare },
       { to: '/floor', key: 'floor', Icon: Hammer },
+      { to: '/outsource', key: 'outsource', Icon: Send },
+      { to: '/deliveries', key: 'deliveries', Icon: Truck },
       { to: '/orders', key: 'orders', Icon: FileText },
       { to: '/approvals', key: 'approvals', Icon: CheckCheck },
     ],
