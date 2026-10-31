@@ -31,6 +31,7 @@ import { useProcesses } from '../masters/processes/api'
 import { stepTypeStyle } from '../masters/processes/step-type'
 import { formatDate } from '../orders/format'
 import { Timeline } from './timeline'
+import { StepDrawer } from './step-drawer'
 import {
   formatMinutes,
   useBoard,
@@ -73,6 +74,7 @@ export function BoardPage() {
   const release = useRelease()
   const reschedule = useReschedule()
   const canMove = hasRole('admin', 'manager', 'supervisor')
+  const [openStep, setOpenStep] = useState<string | null>(null)
 
   // The schedule is relative to "now": refresh it once when the board opens.
   const refreshed = useRef(false)
@@ -86,6 +88,8 @@ export function BoardPage() {
   const steps = useMemo(() => board.data?.steps ?? [], [board.data])
   const byId = useMemo(() => new Map(steps.map((s) => [s.id, s])), [steps])
   const processName = useMemo(() => new Map((processes.data ?? []).map((p) => [p.id, p.name])), [processes.data])
+  const machineName = useMemo(() => new Map((machines.data ?? []).map((m) => [m.id, m.name])), [machines.data])
+  const opened = openStep ? byId.get(openStep) : undefined
   const capable = useMemo(() => {
     const m = new Map<string, Set<string>>()
     ;(links.data ?? []).forEach((l) => m.set(l.process_id, (m.get(l.process_id) ?? new Set()).add(l.machine_id)))
@@ -320,6 +324,7 @@ export function BoardPage() {
           processName={processName}
           downMachines={new Set((downtimes.data ?? []).map((d) => d.machine_id))}
           matches={matches}
+          onOpenStep={setOpenStep}
         />
       ) : (
         <DndContext sensors={sensors} collisionDetection={closestCorners} onDragStart={onDragStart} onDragOver={onDragOver} onDragEnd={onDragEnd} onDragCancel={() => { setActiveId(null); setColumns(serverColumns) }}>
@@ -356,6 +361,7 @@ export function BoardPage() {
                         draggable={canMove && s.job.status === 'in_production' && (s.status === 'pending' || s.status === 'ready') && col.id !== 'outsource' && col.id !== 'manual'}
                         dimmed={!matches(s)}
                         onFocusJob={() => setFocusJob((f) => (f === s.job_id ? null : s.job_id))}
+                        onOpen={() => setOpenStep(s.id)}
                         onMoveTo={
                           canMove && s.job.status === 'in_production' && (s.status === 'pending' || s.status === 'ready') && col.id !== 'outsource' && col.id !== 'manual'
                             ? (machineId) =>
@@ -381,6 +387,16 @@ export function BoardPage() {
         </DndContext>
       )}
       {!canMove && <p className="mt-2 text-xs text-muted">{t('board.readOnly')}</p>}
+      {opened && (
+        <StepDrawer
+          step={opened}
+          processName={processName}
+          machineName={machineName}
+          focused={focusJob === opened.job_id}
+          onFocusJob={() => setFocusJob((f) => (f === opened.job_id ? null : opened.job_id))}
+          onClose={() => setOpenStep(null)}
+        />
+      )}
     </div>
   )
 }
@@ -465,6 +481,7 @@ type CardProps = {
   dimmed?: boolean
   lifted?: boolean
   onFocusJob?: () => void
+  onOpen?: () => void
   onMoveTo?: (machineId: string) => void
 }
 
@@ -502,7 +519,7 @@ const statusTone: Record<string, string> = {
 }
 
 // Card = one job step (design §8.1): job colour stripe, stage, process, job, qty, time window, due date, risk.
-function Card({ step, processName, dimmed, lifted, onFocusJob, onMoveTo }: CardProps) {
+function Card({ step, processName, dimmed, lifted, onFocusJob, onOpen, onMoveTo }: CardProps) {
   const { t } = useTranslation()
   const style = stepTypeStyle[step.step_type]
   const window = fmtWindow(step.planned_start, step.planned_end)
@@ -513,8 +530,13 @@ function Card({ step, processName, dimmed, lifted, onFocusJob, onMoveTo }: CardP
         dimmed && 'opacity-30',
         lifted && 'rotate-1 shadow-xl ring-2 ring-brand/40',
         step.job.is_at_risk && 'border-status-risk/50',
+        onOpen && 'cursor-pointer hover:border-brand/50',
       )}
       style={{ borderLeft: `4px solid hsl(${jobHue(step.job_id)} 70% 55%)` }}
+      // Inner buttons and links keep their own action; a drag never reaches this click.
+      onClick={(e) => {
+        if (!(e.target as HTMLElement).closest('a, button, [data-card-menu]')) onOpen?.()
+      }}
     >
       <div className="flex items-center gap-1.5 text-[11px] text-muted">
         <button
@@ -540,7 +562,9 @@ function Card({ step, processName, dimmed, lifted, onFocusJob, onMoveTo }: CardP
         <span className={cn('grid size-5 shrink-0 place-items-center rounded', style.cls)}>
           <style.Icon className="size-3" aria-hidden />
         </span>
-        <span className="truncate font-semibold">{processName}</span>
+        <button type="button" className="min-w-0 truncate text-left font-semibold hover:text-brand" onClick={onOpen} aria-label={t('board.detail.open', { name: processName })}>
+          {processName}
+        </button>
       </div>
       <div className="mt-0.5 truncate text-muted">
         <Link
@@ -585,7 +609,7 @@ function SuggestButton({ stepId, currentMachine, onPick, className }: { stepId: 
   const time = new Intl.DateTimeFormat(appLocale(), { weekday: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
 
   return (
-    <span className={cn('relative', className)} onPointerDown={(e) => e.stopPropagation()}>
+    <span data-card-menu className={cn('relative', className)} onPointerDown={(e) => e.stopPropagation()}>
       <button type="button" aria-label={t('board.suggest')} title={t('board.suggest')} className="rounded p-0.5 hover:bg-surface-2 hover:text-brand" onClick={() => setOpen((o) => !o)}>
         <ArrowLeftRight className="size-3.5" />
       </button>

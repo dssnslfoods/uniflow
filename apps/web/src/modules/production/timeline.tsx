@@ -1,7 +1,6 @@
 import { useMemo, useState } from 'react'
 import { appLocale } from '@/shared/locale'
 import { useTranslation } from 'react-i18next'
-import { useNavigate } from '@tanstack/react-router'
 import { cn } from '@/lib/utils'
 import type { Machine } from '../masters/machines/api'
 import { formatMinutes, type BoardStep } from './api'
@@ -21,16 +20,16 @@ type Row = { id: string; label: string; steps: BoardStep[]; down?: boolean }
 
 // Gantt (FR-6.4): machines as rows, planned windows as bars, today → N days.
 export function Timeline({
-  steps, machines, processName, downMachines, matches,
+  steps, machines, processName, downMachines, matches, onOpenStep,
 }: {
   steps: BoardStep[]
   machines: Machine[]
   processName: Map<string, string>
   downMachines: Set<string>
   matches: (s: BoardStep) => boolean
+  onOpenStep: (id: string) => void
 }) {
   const { t } = useTranslation()
-  const navigate = useNavigate()
   const [days, setDays] = useState(3)
   const start = useMemo(() => {
     const d = new Date()
@@ -100,7 +99,7 @@ export function Timeline({
                     <button
                       key={s.id}
                       type="button"
-                      onClick={() => navigate({ to: '/jobs/$jobId', params: { jobId: s.job_id } })}
+                      onClick={() => onOpenStep(s.id)}
                       title={`${label}\n${s.job.title}\n${timeFmt.format(new Date(a))} – ${timeFmt.format(new Date(b))} (${formatMinutes(t, Number(s.est_minutes ?? 0))})\n${t(`stepStatus.${s.status}`)}${s.job.is_at_risk ? ` · ${t('board.atRisk')}` : ''}`}
                       className={cn(
                         'absolute top-2 flex h-8 items-center overflow-hidden rounded-md px-1.5 text-left text-[11px] font-medium transition-opacity hover:z-[2] hover:ring-2 hover:ring-brand',
