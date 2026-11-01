@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import type { Session } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
 import { decodeClaims, type Claims, type Role } from '@/lib/claims'
@@ -18,6 +19,13 @@ const AuthContext = createContext<AuthState | null>(null)
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null)
   const [ready, setReady] = useState(false)
+  const qc = useQueryClient()
+  const userId = session?.user.id
+
+  // Query keys are per tenant, not per person: never show the next person on a shared PC the last one's data.
+  useEffect(() => {
+    return () => qc.clear()
+  }, [qc, userId])
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {

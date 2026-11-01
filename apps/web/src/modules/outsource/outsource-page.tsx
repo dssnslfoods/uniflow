@@ -5,6 +5,7 @@ import { AlertTriangle, ClipboardCheck, PackageOpen, Send } from 'lucide-react'
 import { useAuth } from '@/app/auth'
 import { errorMessage } from '@/lib/errors'
 import { cn } from '@/lib/utils'
+import { localDate } from '@/shared/locale'
 import { Button } from '@/shared/ui/button'
 import { Drawer } from '@/shared/ui/drawer'
 import { Field, Input, Select, Textarea } from '@/shared/ui/input'
@@ -178,7 +179,7 @@ function SendDrawer({ step, onClose }: { step: BoardStep; onClose: () => void })
   const capable = (services.data ?? []).filter((s) => s.process_id === step.process_id)
   const [vendorId, setVendorId] = useState(capable[0]?.vendor_id ?? '')
   const lead = capable.find((s) => s.vendor_id === vendorId)?.lead_time_days ?? 1
-  const defaultDate = () => new Date(Date.now() + Number(lead) * 86_400_000).toISOString().slice(0, 10)
+  const defaultDate = () => localDate(Number(lead))
   const [expected, setExpected] = useState(defaultDate)
   const [qty, setQty] = useState(String(Number(step.planned_qty)))
   const [cost, setCost] = useState('')
@@ -208,7 +209,7 @@ function SendDrawer({ step, onClose }: { step: BoardStep; onClose: () => void })
               const next = e.target.value
               setVendorId(next)
               const days = Number(capable.find((c) => c.vendor_id === next)?.lead_time_days ?? 1)
-              setExpected(new Date(Date.now() + days * 86_400_000).toISOString().slice(0, 10))
+              setExpected(localDate(days))
             }}>
               <option value="" disabled>{t('outsource.pickVendor')}</option>
               {ordered.map((v) => <option key={v.id} value={v.id}>{v.name}</option>)}

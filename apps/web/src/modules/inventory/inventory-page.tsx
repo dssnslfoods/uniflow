@@ -215,7 +215,7 @@ function CardDrawer({ row, onClose }: { row: StockRow; onClose: () => void }) {
         <table className="w-full text-sm">
           <thead className="text-xs text-muted">
             <tr>
-              <th className="py-2 text-left font-medium">{t('delivery.date')}</th>
+              <th className="py-2 text-left font-medium">{t('common.date')}</th>
               <th className="py-2 text-left font-medium" />
               <th className="py-2 text-right font-medium">{t('inventory.qty')}</th>
               <th className="py-2 text-right font-medium">{t('inventory.balance')}</th>

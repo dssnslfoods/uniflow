@@ -5,6 +5,7 @@ import { PackageCheck, Printer, Truck } from 'lucide-react'
 import { useAuth } from '@/app/auth'
 import { errorMessage } from '@/lib/errors'
 import { cn } from '@/lib/utils'
+import { localDate } from '@/shared/locale'
 import { Button } from '@/shared/ui/button'
 import { Drawer } from '@/shared/ui/drawer'
 import { Field, Input, Textarea } from '@/shared/ui/input'
@@ -104,7 +105,7 @@ function CreateDrawer({ jobs, onClose }: { jobs: DeliverableJob[]; onClose: () =
   const create = useCreateDelivery()
   const [qty, setQty] = useState<Record<string, string>>(() => Object.fromEntries(jobs.map((j) => [j.id, String(Number(j.qty) - delivered(j))])))
   const [receiver, setReceiver] = useState('')
-  const [date, setDate] = useState(new Date().toISOString().slice(0, 10))
+  const [date, setDate] = useState(localDate())
   const [note, setNote] = useState('')
 
   function submit(e: FormEvent) {

@@ -7,7 +7,7 @@ import { Button } from '@/shared/ui/button'
 import { Field, Input } from '@/shared/ui/input'
 import { AuthLayout } from './auth-layout'
 import { AlertTriangle } from 'lucide-react'
-import { useCreateTenant, useMyTenants } from './api'
+import { useCreateTenant, useMyTenants, useSuspendedTenants } from './api'
 
 export function OnboardingPage() {
   const { t } = useTranslation()
@@ -15,6 +15,7 @@ export function OnboardingPage() {
   const navigate = useNavigate()
   const create = useCreateTenant()
   const tenants = useMyTenants()
+  const suspended = useSuspendedTenants()
   const [name, setName] = useState('')
 
   // Member of a shop but the token carries no tenant: creating more shops would only add duplicates.
@@ -28,6 +29,25 @@ export function OnboardingPage() {
           </p>
           <ul className="list-disc pl-5 text-sm text-muted">
             {tenants.data.map((x) => <li key={x.tenant_id}>{x.name}</li>)}
+          </ul>
+          <button type="button" className="text-sm text-muted hover:underline" onClick={signOut}>
+            {t('auth.signOut')}
+          </button>
+        </div>
+      </AuthLayout>
+    )
+  }
+
+  if (suspended.data && suspended.data.length > 0) {
+    return (
+      <AuthLayout title={t('onboarding.suspendedTitle')}>
+        <div className="flex flex-col gap-4">
+          <p className="flex gap-2 rounded-lg bg-status-risk/10 px-3 py-2.5 text-sm text-status-risk">
+            <AlertTriangle className="mt-0.5 size-4 shrink-0" aria-hidden />
+            {t('errors.tenant.suspended')}
+          </p>
+          <ul className="list-disc pl-5 text-sm text-muted">
+            {suspended.data.map((x) => <li key={x.tenant_id}>{x.name}</li>)}
           </ul>
           <button type="button" className="text-sm text-muted hover:underline" onClick={signOut}>
             {t('auth.signOut')}

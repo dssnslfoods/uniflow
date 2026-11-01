@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { db, rpc } from '@/lib/supabase'
 import { useTenantKey } from '@/shared/data'
+import { localDate } from '@/shared/locale'
 import type { StepType } from '../masters/processes/api'
 
 export type JobStatus =
@@ -336,8 +337,7 @@ export function useMachineLoad(days = 7) {
     queryKey: key,
     refetchInterval: 30_000,
     queryFn: async () => {
-      const today = new Date().toISOString().slice(0, 10)
-      const { data, error } = await rpc().rpc('machine_load', { p_from: today, p_days: days })
+      const { data, error } = await rpc().rpc('machine_load', { p_from: localDate(), p_days: days })
       if (error) throw error
       return data as LoadRow[]
     },

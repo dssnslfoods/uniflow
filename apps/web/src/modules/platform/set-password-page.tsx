@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useNavigate } from '@tanstack/react-router'
 import { useAuth } from '@/app/auth'
+import { errorMessage } from '@/lib/errors'
 import { passwordChosen, supabase } from '@/lib/supabase'
 import { Button } from '@/shared/ui/button'
 import { Field, Input } from '@/shared/ui/input'
@@ -24,7 +25,7 @@ export function SetPasswordPage() {
     setError(null)
     const { error } = await supabase.auth.updateUser({ password })
     setBusy(false)
-    if (error) return setError(error.message)
+    if (error) return setError(errorMessage(error))
     passwordChosen()
     navigate({ to: '/' })
   }

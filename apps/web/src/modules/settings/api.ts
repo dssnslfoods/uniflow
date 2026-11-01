@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { db, rpc, supabase } from '@/lib/supabase'
 import { useAuth } from '@/app/auth'
 import { useList, useTenantKey } from '@/shared/data'
+import { localDate } from '@/shared/locale'
 import type { Role } from '@/lib/claims'
 
 export type TenantSettings = {
@@ -141,7 +142,7 @@ export function useDefaultCalendar() {
       if (error) throw error
       const [shifts, holidays] = await Promise.all([
         db().from('calendar_shifts').select('weekday, start_time, end_time').eq('calendar_id', cal.id).order('weekday').order('start_time'),
-        db().from('holidays').select('id, day, name').gte('day', new Date().toISOString().slice(0, 10)).order('day'),
+        db().from('holidays').select('id, day, name').gte('day', localDate()).order('day'),
       ])
       if (shifts.error) throw shifts.error
       if (holidays.error) throw holidays.error

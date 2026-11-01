@@ -52,6 +52,10 @@ Deno.serve(async (req) => {
     if (!current?.roles.includes('admin')) return reply(403, { code: 'auth.forbidden' })
   }
 
+  // A full plan must fail here: once the invitation is sent it cannot be taken back.
+  const { error: seatError } = await asCaller.schema('api').rpc('assert_can_invite', { p_email: email, p_tenant: body.tenantId ?? null })
+  if (seatError) return reply(400, { code: seatError.details ?? 'member.add_failed', message: seatError.message })
+
   // New address: create the account and send the invitation. Existing account: just add it.
   const { error: inviteError } = await admin.auth.admin.inviteUserByEmail(email, {
     redirectTo: body.redirectTo,

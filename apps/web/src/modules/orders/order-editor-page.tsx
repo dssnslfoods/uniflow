@@ -5,6 +5,7 @@ import { ArrowLeft, ExternalLink, FileUp, Lock, Plus, Trash2, Workflow } from 'l
 import { useAuth } from '@/app/auth'
 import { errorMessage } from '@/lib/errors'
 import { cn } from '@/lib/utils'
+import { localDate } from '@/shared/locale'
 import { Button } from '@/shared/ui/button'
 import { Field, Input, Select, Textarea } from '@/shared/ui/input'
 import { ErrorNote, ListSkeleton } from '@/shared/ui/page'
@@ -26,7 +27,7 @@ import { formatMoney } from './format'
 import { SoStatusPill } from './so-status'
 
 const MAX_FILE = 20 * 1024 * 1024
-const today = () => new Date().toISOString().slice(0, 10)
+const today = localDate
 
 type Line = OrderItem & { key: string }
 const newKey = () => Math.random().toString(36).slice(2)
@@ -79,6 +80,7 @@ function OrderEditor({ order }: { order: Order | null }) {
     order?.items.length ? order.items.map((i) => ({ ...i, key: newKey() })) : [blankLine()],
   )
   const [file, setFile] = useState<File | null>(null)
+  const savedId = useRef(order?.id)
   const [fileError, setFileError] = useState<string | null>(null)
 
   const set = <K extends keyof OrderHeader>(k: K, v: OrderHeader[K]) => setHeader((h) => ({ ...h, [k]: v }))
@@ -108,7 +110,8 @@ function OrderEditor({ order }: { order: Order | null }) {
 
   async function persist(): Promise<string> {
     return save.mutateAsync({
-      id: order?.id,
+      id: savedId.current,
+      onCreated: (id) => { savedId.current = id },
       header: { ...header, customer_po_no: header.customer_po_no.trim(), note: header.note?.trim() || null },
       items: filled.map(({ key: _key, ...item }) => item),
       file,

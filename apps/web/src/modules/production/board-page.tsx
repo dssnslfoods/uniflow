@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
-import { appLocale } from '@/shared/locale'
+import { appLocale, localDate } from '@/shared/locale'
 import { useTranslation } from 'react-i18next'
 import { Link } from '@tanstack/react-router'
 import {
@@ -148,7 +148,7 @@ export function BoardPage() {
   }
 
   const loadBy = useMemo(() => {
-    const today = new Date().toISOString().slice(0, 10)
+    const today = localDate()
     const m = new Map<string, { today: number; week: number; weekAvail: number; weekPlanned: number }>()
     ;(load.data ?? []).forEach((r: LoadRow) => {
       const cur = m.get(r.machine_id) ?? { today: 0, week: 0, weekAvail: 0, weekPlanned: 0 }

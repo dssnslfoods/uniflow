@@ -99,7 +99,7 @@ export function usePoFileUrl(path: string | null | undefined) {
   })
 }
 
-type SaveInput = { id?: string; header: OrderHeader; items: OrderItem[]; file: File | null }
+type SaveInput = { id?: string; header: OrderHeader; items: OrderItem[]; file: File | null; onCreated?: (id: string) => void }
 
 // Draft save: header → optional PO file → items (replaced; drafts have no downstream links yet).
 export function useSaveOrder() {
@@ -107,12 +107,14 @@ export function useSaveOrder() {
   const qc = useQueryClient()
   const { claims } = useAuth()
   return useMutation({
-    mutationFn: async ({ id, header, items, file }: SaveInput) => {
+    mutationFn: async ({ id, header, items, file, onCreated }: SaveInput) => {
       const { data, error } = await (id
         ? db().from('sales_orders').update(header).eq('id', id).select('id').single()
         : db().from('sales_orders').insert(header).select('id').single())
       if (error) throw error
       const orderId = (data as { id: string }).id
+      // The header now exists: a retry after any later failure must update it, not insert a duplicate.
+      if (!id) onCreated?.(orderId)
 
       if (file) {
         const ext = file.name.split('.').pop()?.toLowerCase() || 'pdf'

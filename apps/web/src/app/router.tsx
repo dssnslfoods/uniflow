@@ -66,6 +66,7 @@ const onboardingRoute = createRoute({
   path: '/onboarding',
   beforeLoad: ({ context }) => {
     if (!context.auth.session) throw redirect({ to: '/login' })
+    if (context.auth.claims?.tenant_id) throw redirect({ to: '/' })
   },
   component: OnboardingPage,
 })

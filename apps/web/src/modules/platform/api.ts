@@ -18,6 +18,20 @@ export function useMyTenants() {
   })
 }
 
+// Shops the caller belongs to that a platform admin has suspended (excluded from my_tenants).
+export function useSuspendedTenants() {
+  const { session } = useAuth()
+  return useQuery({
+    queryKey: ['suspended-tenants', session?.user.id],
+    enabled: !!session,
+    queryFn: async () => {
+      const { data, error } = await rpc().rpc('my_suspended_tenants')
+      if (error) throw error
+      return data as { tenant_id: string; name: string }[]
+    },
+  })
+}
+
 export function useCreateTenant() {
   const { refresh } = useAuth()
   const qc = useQueryClient()

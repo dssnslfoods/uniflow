@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
+import { errorMessage } from '@/lib/errors'
 import { supabase } from '@/lib/supabase'
 import { Button } from '@/shared/ui/button'
 import { Field, Input } from '@/shared/ui/input'
@@ -22,14 +23,14 @@ export function LoginPage() {
     setNotice(null)
     if (mode === 'signin') {
       const { error } = await supabase.auth.signInWithPassword({ email, password })
-      if (error) setError(error.message)
+      if (error) setError(errorMessage(error))
     } else {
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: { data: { full_name: fullName }, emailRedirectTo: window.location.origin },
       })
-      if (error) setError(error.message)
+      if (error) setError(errorMessage(error))
       else if (!data.session) setNotice(t('auth.checkEmail'))
     }
     setBusy(false)
