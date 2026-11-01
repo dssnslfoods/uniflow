@@ -40,6 +40,7 @@ const InventoryPage = lazy(() => import('@/modules/inventory/inventory-page').th
 const ProofsPage = lazy(() => import('@/modules/proof/proofs-page').then((m) => ({ default: m.ProofsPage })))
 const AdminUsersPage = lazy(() => import('@/modules/platform/admin-users-page').then((m) => ({ default: m.AdminUsersPage })))
 const DashboardPage = lazy(() => import('@/modules/dashboard/dashboard-page').then((m) => ({ default: m.DashboardPage })))
+const ManualPage = lazy(() => import('@/modules/manual/manual-page').then((m) => ({ default: m.ManualPage })))
 
 type Ctx = { auth: AuthState }
 
@@ -77,9 +78,9 @@ const appRoute = createRoute({
     if (!context.auth.session) throw redirect({ to: '/login' })
     if (needsPassword()) throw redirect({ to: '/set-password' })
     if (!context.auth.claims?.tenant_id) {
-      // Platform admins work without a tenant; only the admin console is reachable then.
+      // Platform admins work without a tenant; only the admin console and the manual are reachable then.
       if (context.auth.claims?.platform_admin) {
-        if (!location.pathname.startsWith('/admin')) throw redirect({ to: '/admin' })
+        if (!location.pathname.startsWith('/admin') && location.pathname !== '/manual') throw redirect({ to: '/admin' })
       } else {
         throw redirect({ to: '/onboarding' })
       }
@@ -193,6 +194,7 @@ const routeTree = rootRoute.addChildren([
     adminUsersRoute,
     page('/settings', SettingsPage),
     page('/dashboard', DashboardPage),
+    page('/manual', ManualPage),
     page('/outsource', gated('outsource', OutsourcePage)),
     page('/deliveries', gated('delivery', DeliveryPage)),
     page('/inventory', gated('inventory', InventoryPage)),

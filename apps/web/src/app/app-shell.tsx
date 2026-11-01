@@ -1,7 +1,7 @@
 import { Suspense, useState, type ButtonHTMLAttributes } from 'react'
 import { Link, Outlet } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import { Building2, UserCog, CheckCheck, FileCheck2, Settings, Send, Truck, Factory, FileText, Gauge, Hammer, KanbanSquare, Languages, Layers, LifeBuoy, LogOut, Moon, Package, Sun, Users, Workflow } from 'lucide-react'
+import { BookOpen, Building2, UserCog, CheckCheck, FileCheck2, Settings, Send, Truck, Factory, FileText, Gauge, Hammer, KanbanSquare, Languages, Layers, LifeBuoy, LogOut, Moon, Package, Sun, Users, Workflow } from 'lucide-react'
 import { useAuth } from './auth'
 import { useMyTenants, useSupportSession, useSwitchTenant } from '@/modules/platform/api'
 import { usePendingApprovals } from '@/modules/production/api'
@@ -67,11 +67,12 @@ export function AppShell() {
   useTenantRealtime()
   const isPlatformAdmin = !!auth.claims?.platform_admin
   const hasTenant = !!auth.claims?.tenant_id
-  // Platform admins without a tenant see only the console; with one, the console is added at the end.
+  // Platform admins without a tenant see only the console and the manual; with one, the console is added at the end.
   const modules = useModules()
   const shopGroups = navGroups.map((g) => ({ ...g, items: g.items.filter((i) => !i.module || modules.has(i.module)) }))
   const groups = [
     ...(hasTenant ? shopGroups : []),
+    { key: 'help', items: [{ to: '/manual', key: 'manual', Icon: BookOpen }] },
     ...(isPlatformAdmin ? [{ key: 'platform', items: [{ to: '/admin', key: 'admin', Icon: Building2 }, { to: '/admin/users', key: 'adminUsers', Icon: UserCog }] }] : []),
   ]
 
