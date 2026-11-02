@@ -52,6 +52,7 @@ export const contentTh: ManualText = {
           { label: 'เบิก / คืนวัตถุดิบของ Job', roles: ['admin', 'manager', 'supervisor', 'staff'] },
           { label: 'ปรับยอดคลัง', roles: ['admin', 'manager'] },
           { label: 'ออกใบส่งของ', roles: ['admin', 'manager', 'supervisor'] },
+          { label: 'ปิดงานแบบส่งขาด', roles: ['admin', 'manager'] },
           { label: 'แก้เครื่องจักร ขั้นตอนการผลิต ปฏิทินกะ วัตถุดิบ', roles: ['admin', 'manager'] },
           { label: 'แก้ลูกค้า Template และ Vendor', roles: ['admin', 'manager', 'supervisor'] },
           { label: 'เชิญสมาชิก กำหนดบทบาท แก้ค่าทั่วไปของร้าน', roles: ['admin'] },
@@ -327,6 +328,7 @@ export const contentTh: ManualText = {
         ],
       },
       { p: 'แบ่งส่งแล้ว Job จะเป็น [[jobStatus.partially_delivered]] จนกว่าจะส่งครบจึงเป็น [[jobStatus.completed]] และเมื่อทุก Job ของ PO ส่งครบ PO จะเป็น [[soStatus.delivered]] โดยอัตโนมัติ' },
+      { p: 'ส่งได้ไม่เกินจำนวนของดีที่ผลิตได้จริง ถ้าผลิตไม่ครบและไม่ทำเพิ่ม ให้ผู้จัดการกด [[delivery.closeShort]] พร้อมใส่เหตุผล' },
     ],
   },
   dashboard: {

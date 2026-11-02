@@ -13,9 +13,11 @@ import { EmptyState, ErrorNote, ListSkeleton, PageHeader } from '@/shared/ui/pag
 import { useToast } from '@/shared/ui/toast'
 import { formatDate } from '../orders/format'
 import { useTenant } from '../settings/api'
-import { useCreateDelivery, useDeliverableJobs, useDeliveries, useDelivery, type DeliverableJob } from './api'
+import { useCloseJobShort, useCreateDelivery, useDeliverableJobs, useDeliveries, useDelivery, type DeliverableJob } from './api'
 
 const delivered = (j: DeliverableJob) => j.delivered.reduce((s, d) => s + Number(d.qty), 0)
+// Only good pieces can go out (D-24).
+const deliverable = (j: DeliverableJob) => Math.max(Math.min(Number(j.qty), j.good_qty) - delivered(j), 0)
 
 // Deliveries (FR-9): finished jobs grouped by PO, partial deliveries, printable notes.
 export function DeliveryPage() {
@@ -25,6 +27,21 @@ export function DeliveryPage() {
   const history = useDeliveries()
   const [creating, setCreating] = useState<DeliverableJob[] | null>(null)
   const canAct = hasRole('admin', 'manager', 'supervisor')
+  const canClose = hasRole('admin', 'manager')
+  const toast = useToast()
+  const closeShort = useCloseJobShort()
+
+  function onCloseShort(j: DeliverableJob) {
+    const reason = window.prompt(t('delivery.closeShortReason', { job: j.job_no, n: delivered(j).toLocaleString(), q: Number(j.qty).toLocaleString() }))
+    if (!reason?.trim()) return
+    closeShort.mutate(
+      { p_job: j.id, p_reason: reason.trim() },
+      {
+        onSuccess: () => toast({ tone: 'success', message: t('delivery.closedShort', { job: j.job_no }) }),
+        onError: (e) => toast({ tone: 'error', message: errorMessage(e) }),
+      },
+    )
+  }
 
   const groups = useMemo(() => {
     const by = new Map<string, DeliverableJob[]>()
@@ -54,7 +71,7 @@ export function DeliveryPage() {
                     <div className="text-xs text-muted">PO {o.customer_po_no}{o.delivery_info?.address ? ` · ${o.delivery_info.address}` : ''}</div>
                   </div>
                   {canAct && (
-                    <Button className="ml-auto" onClick={() => setCreating(jobs)}>
+                    <Button className="ml-auto" disabled={jobs.every((j) => deliverable(j) === 0)} onClick={() => setCreating(jobs)}>
                       <Truck className="size-4" aria-hidden />
                       {t('delivery.create')}
                     </Button>
@@ -65,7 +82,15 @@ export function DeliveryPage() {
                     <li key={j.id} className={cn('flex flex-wrap items-center gap-3 px-5 py-2.5 text-sm', i && 'border-t border-border')}>
                       <Link to="/jobs/$jobId" params={{ jobId: j.id }} className="font-medium hover:text-brand">{j.job_no} {j.title}</Link>
                       <span className="tabular ml-auto text-xs text-muted">{t('delivery.delivered', { n: delivered(j).toLocaleString() })}</span>
-                      <span className="tabular text-xs font-medium">{t('delivery.remaining', { n: (Number(j.qty) - delivered(j)).toLocaleString() })}</span>
+                      {j.good_qty < Number(j.qty) && (
+                        <span className="tabular text-xs text-status-paused">{t('delivery.goodOnly', { n: j.good_qty.toLocaleString(), q: Number(j.qty).toLocaleString() })}</span>
+                      )}
+                      <span className="tabular text-xs font-medium">{t('delivery.remaining', { n: deliverable(j).toLocaleString() })}</span>
+                      {canClose && delivered(j) > 0 && (
+                        <Button variant="ghost" size="sm" onClick={() => onCloseShort(j)} loading={closeShort.isPending && closeShort.variables?.p_job === j.id}>
+                          {t('delivery.closeShort')}
+                        </Button>
+                      )}
                     </li>
                   ))}
                 </ul>
@@ -103,7 +128,7 @@ function CreateDrawer({ jobs, onClose }: { jobs: DeliverableJob[]; onClose: () =
   const toast = useToast()
   const navigate = useNavigate()
   const create = useCreateDelivery()
-  const [qty, setQty] = useState<Record<string, string>>(() => Object.fromEntries(jobs.map((j) => [j.id, String(Number(j.qty) - delivered(j))])))
+  const [qty, setQty] = useState<Record<string, string>>(() => Object.fromEntries(jobs.map((j) => [j.id, String(deliverable(j))])))
   const [receiver, setReceiver] = useState('')
   const [date, setDate] = useState(localDate())
   const [note, setNote] = useState('')
@@ -137,9 +162,9 @@ function CreateDrawer({ jobs, onClose }: { jobs: DeliverableJob[]; onClose: () =
             <li key={j.id} className="flex items-center gap-3 rounded-lg border border-border px-3 py-2">
               <span className="min-w-0 flex-1 text-sm">
                 <span className="block truncate font-medium">{j.job_no} {j.title}</span>
-                <span className="text-xs text-muted">{t('delivery.remaining', { n: (Number(j.qty) - delivered(j)).toLocaleString() })}</span>
+                <span className="text-xs text-muted">{t('delivery.remaining', { n: deliverable(j).toLocaleString() })}</span>
               </span>
-              <Input type="number" min={0} max={Number(j.qty) - delivered(j)} aria-label={t('delivery.qty')} className="tabular h-9 w-28 text-right"
+              <Input type="number" min={0} max={deliverable(j)} aria-label={t('delivery.qty')} className="tabular h-9 w-28 text-right"
                 value={qty[j.id]} onChange={(e) => setQty((q) => ({ ...q, [j.id]: e.target.value }))} />
             </li>
           ))}

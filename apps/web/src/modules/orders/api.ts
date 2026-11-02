@@ -48,6 +48,8 @@ export type OrderRow = {
   items: { qty: number; unit_price: number }[]
 }
 
+type ItemPrice = { id: string; sales_order_id: string; qty: number; unit_price: number }
+
 const PO_BUCKET = 'po-files'
 
 export function useOrders() {
@@ -57,10 +59,14 @@ export function useOrders() {
     queryFn: async () => {
       const { data, error } = await db()
         .from('sales_orders')
-        .select('id, doc_no, customer_po_no, po_date, due_date, status, customer:customers(name), items:sales_order_items(qty, unit_price)')
+        .select('id, doc_no, customer_po_no, po_date, due_date, status, customer:customers(name)')
         .order('created_at', { ascending: false })
       if (error) throw error
-      return data as unknown as OrderRow[]
+      const { data: prices, error: priceError } = await db().from('sales_order_item_prices_v').select('sales_order_id, qty, unit_price')
+      if (priceError) throw priceError
+      const byOrder = new Map<string, OrderRow['items']>()
+      ;(prices as ItemPrice[]).forEach((p) => byOrder.set(p.sales_order_id, [...(byOrder.get(p.sales_order_id) ?? []), p]))
+      return (data as unknown as Omit<OrderRow, 'items'>[]).map((o) => ({ ...o, items: byOrder.get(o.id) ?? [] }))
     },
   })
 }
@@ -75,13 +81,17 @@ export function useOrder(id: string | null) {
         .from('sales_orders')
         .select(
           'id, doc_no, status, customer_id, customer_po_no, po_date, due_date, delivery_info, note, po_file_path, confirmed_at, ' +
-            'items:sales_order_items(id, line_no, description, spec, qty, uom, unit_price, due_date, note)',
+            'items:sales_order_items(id, line_no, description, spec, qty, uom, due_date, note)',
         )
         .eq('id', id!)
         .order('line_no', { referencedTable: 'sales_order_items' })
         .single()
       if (error) throw error
-      return data as unknown as Order
+      const { data: prices, error: priceError } = await db().from('sales_order_item_prices_v').select('id, unit_price').eq('sales_order_id', id!)
+      if (priceError) throw priceError
+      const priceOf = new Map((prices as Pick<ItemPrice, 'id' | 'unit_price'>[]).map((p) => [p.id, p.unit_price]))
+      const order = data as unknown as Order
+      return { ...order, items: order.items.map((i) => ({ ...i, unit_price: priceOf.get(i.id!) ?? 0 })) }
     },
   })
 }

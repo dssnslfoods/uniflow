@@ -52,6 +52,7 @@ export const contentEn: ManualText = {
           { label: 'Issue / return materials for a job', roles: ['admin', 'manager', 'supervisor', 'staff'] },
           { label: 'Adjust stock counts', roles: ['admin', 'manager'] },
           { label: 'Create delivery notes', roles: ['admin', 'manager', 'supervisor'] },
+          { label: 'Close a short job', roles: ['admin', 'manager'] },
           { label: 'Edit machines, processes, shift calendar, materials', roles: ['admin', 'manager'] },
           { label: 'Edit customers, templates and vendors', roles: ['admin', 'manager', 'supervisor'] },
           { label: 'Invite members, assign roles, edit general shop settings', roles: ['admin'] },
@@ -327,6 +328,7 @@ export const contentEn: ManualText = {
         ],
       },
       { p: 'After a part delivery the job is [[jobStatus.partially_delivered]], then [[jobStatus.completed]] when fully shipped. When all jobs of a PO are shipped, the PO becomes [[soStatus.delivered]] automatically.' },
+      { p: 'You can ship only the good pieces actually produced. If a job came up short and no more will be made, a manager uses [[delivery.closeShort]] and gives the reason.' },
     ],
   },
   dashboard: {

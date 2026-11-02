@@ -45,7 +45,7 @@ export const sections = [
   { id: 'outsource', group: 'daily', roles: planners, module: 'outsource', to: '/outsource' },
   { id: 'inventory', group: 'daily', roles: makers, module: 'inventory', to: '/inventory' },
   { id: 'deliveries', group: 'daily', roles: planners, module: 'delivery', to: '/deliveries' },
-  { id: 'dashboard', group: 'daily', roles: 'all', to: '/dashboard' },
+  { id: 'dashboard', group: 'daily', roles: ['admin', 'executive', 'manager', 'supervisor'], to: '/dashboard' },
   { id: 'notifications', group: 'daily', roles: 'all' },
 
   { id: 'processes', group: 'data', roles: owners, to: '/processes' },

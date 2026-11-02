@@ -12,6 +12,7 @@ import { AppShell } from './app-shell'
 import { LoginPage } from '@/modules/platform/login-page'
 import { OnboardingPage } from '@/modules/platform/onboarding-page'
 import { SetPasswordPage } from '@/modules/platform/set-password-page'
+import { isFloorOnly, isOfficeOnly } from '@/lib/claims'
 import { needsPassword } from '@/lib/supabase'
 import { ModuleGate } from '@/shared/ui/module-gate'
 import type { ModuleKey } from '@/modules/settings/api'
@@ -86,6 +87,7 @@ const appRoute = createRoute({
         throw redirect({ to: '/onboarding' })
       }
     }
+    if (isFloorOnly(context.auth.claims) && isOfficeOnly(location.pathname)) throw redirect({ to: '/floor' })
   },
   component: AppShell,
 })

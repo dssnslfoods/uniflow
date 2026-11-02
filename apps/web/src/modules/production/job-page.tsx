@@ -13,6 +13,7 @@ import { useProcesses } from '../masters/processes/api'
 import { stepTypeStyle } from '../masters/processes/step-type'
 import { formatDate } from '../orders/format'
 import { useAuth } from '@/app/auth'
+import { isFloorOnly } from '@/lib/claims'
 import { Input } from '@/shared/ui/input'
 import { useToast } from '@/shared/ui/toast'
 import { useAddRework, useProfileNames, formatMinutes, runMinutes, useJobDetail, type JobDetail } from './api'
@@ -46,7 +47,7 @@ function useLookups() {
 export function JobPage({ jobId }: { jobId: string }) {
   const { t } = useTranslation()
   const detail = useJobDetail(jobId)
-  const { hasRole } = useAuth()
+  const { hasRole, claims } = useAuth()
   const canRework = hasRole('admin', 'manager', 'supervisor')
   const { processName, machineName } = useLookups()
   const actorIds = useMemo(() => [...new Set((detail.data?.logs ?? []).map((l) => l.actor_id).filter(Boolean) as string[])], [detail.data])
@@ -62,9 +63,15 @@ export function JobPage({ jobId }: { jobId: string }) {
   return (
     <div className="mx-auto max-w-5xl">
       <div className="mb-5 flex flex-wrap items-center gap-3">
-        <Link to="/orders/$orderId/plan" params={{ orderId: job.order.id }} className="rounded-lg p-1.5 text-muted hover:bg-surface-2 hover:text-fg" aria-label={t('common.back')}>
-          <ArrowLeft className="size-5" />
-        </Link>
+        {isFloorOnly(claims) ? (
+          <Link to="/floor" className="rounded-lg p-1.5 text-muted hover:bg-surface-2 hover:text-fg" aria-label={t('common.back')}>
+            <ArrowLeft className="size-5" />
+          </Link>
+        ) : (
+          <Link to="/orders/$orderId/plan" params={{ orderId: job.order.id }} className="rounded-lg p-1.5 text-muted hover:bg-surface-2 hover:text-fg" aria-label={t('common.back')}>
+            <ArrowLeft className="size-5" />
+          </Link>
+        )}
         <div className="min-w-0">
           <div className="text-xs font-medium text-muted">{job.job_no} · {job.order.doc_no} · PO {job.order.customer_po_no}</div>
           <h1 className="text-xl font-semibold">{job.title}</h1>

@@ -119,6 +119,8 @@ SRS กำหนดระบบ **MRP สำหรับโรงพิมพ์
 | D-21 | การจัดการงานแบบ Trello | **Task Board**: การ์ด Task ต่อ Step วางในคอลัมน์ต่อเครื่อง — ลากเพื่อ **โยกเครื่อง** และ **ปรับคิว** ได้ โดยระบบคำนวณเวลา/Load/Due ใหม่และตรวจกฎทุกครั้ง | M6 (FR-6.1–6.4), design §8.1 |
 | D-22 | UX/UI | **เน้น User friendly ทันสมัย น่าใช้งาน** — Design system เดียว, งานหลัก ≤ 3 คลิก, Undo แทน Confirm, Mobile-first สำหรับ Staff, โหมด TV สำหรับผู้บริหาร, Usability test กับ Pilot ก่อนเขียนโค้ด (เป้า SUS ≥ 75) | NFR Usability, design §8.0 |
 | D-23 | Infrastructure | **Database/Backend = Supabase**, **Frontend รันบน Firebase Hosting** (แทน Vercel ใน SRS §9) | design §2.1 |
+| D-24 | ส่งของขาดจากจำนวนสั่ง (UAT 1 พ.ย. 2026) | **ส่งได้ไม่เกินของดีจากขั้นสุดท้าย** (รวมงานแก้) ถ้าไม่ทำเพิ่ม Manager/Admin **ปิดงานแบบส่งขาด** พร้อมเหตุผล ต้องส่งแล้วอย่างน้อยหนึ่งครั้ง | G-07, G-21, FR-9.3 |
+| D-25 | สิทธิ์ของ Staff (UAT 1 พ.ย. 2026) | **Staff ไม่เห็นราคาขาย, PO, Dashboard, หน้าอนุมัติ และหน้าจ้างนอก** ตาม RBAC §10; คอลัมน์ `unit_price` อ่านผ่าน `sales_order_item_prices_v` เท่านั้น | SRS §10 |
 | D-19 | Gang run | **1 Job รวมหลายรายการ PO ได้** (พิมพ์รวมแผ่น) — ใช้ `job_order_items` แบบ M:N | D-14 |
 
 **คำถามที่ยังเปิด (ถามโรงพิมพ์นำร่องใน Phase 0):**

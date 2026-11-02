@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { db } from '@/lib/supabase'
+import { db, rpc } from '@/lib/supabase'
 import { useTenantKey } from '@/shared/data'
 import { usePlanCommand, type JobStatus } from '../production/api'
 
@@ -11,6 +11,7 @@ export type DeliverableJob = {
   status: JobStatus
   order: { id: string; doc_no: string; customer_po_no: string; customer: { name: string } | null; delivery_info: { address?: string } }
   delivered: { qty: number }[]
+  good_qty: number
 }
 
 export function useDeliverableJobs() {
@@ -24,7 +25,11 @@ export function useDeliverableJobs() {
         .in('status', ['ready_to_deliver', 'partially_delivered'])
         .order('job_no')
       if (error) throw error
-      return data as unknown as DeliverableJob[]
+      const jobs = data as unknown as Omit<DeliverableJob, 'good_qty'>[]
+      const { data: good, error: goodError } = await rpc().rpc('job_good_qtys', { p_jobs: jobs.map((j) => j.id) })
+      if (goodError) throw goodError
+      const goodOf = new Map((good as { job_id: string; good_qty: number }[]).map((g) => [g.job_id, Number(g.good_qty)]))
+      return jobs.map((j) => ({ ...j, good_qty: goodOf.get(j.id) ?? 0 }))
     },
   })
 }
@@ -68,6 +73,8 @@ export function useDelivery(id: string) {
     },
   })
 }
+
+export const useCloseJobShort = () => usePlanCommand<{ p_job: string; p_reason: string }, null>('close_job_short')
 
 export const useCreateDelivery = () =>
   usePlanCommand<

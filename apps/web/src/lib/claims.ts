@@ -2,6 +2,10 @@ export type Role = 'admin' | 'executive' | 'manager' | 'supervisor' | 'staff'
 
 export type Claims = { sub: string; tenant_id: string | null; roles: Role[]; platform_admin: boolean }
 
+// People who are Staff and nothing else work from the floor; these pages are not for them (SRS §10).
+export const isFloorOnly = (claims: Claims | null) => !!claims?.roles.length && claims.roles.every((r) => r === 'staff')
+export const isOfficeOnly = (path: string) => /^\/(dashboard|orders|approvals|outsource)(\/|$)/.test(path)
+
 // Claims added by public.custom_access_token_hook. Decoded only for UI decisions;
 // the database enforces everything again through RLS.
 export function decodeClaims(accessToken: string | undefined): Claims | null {
