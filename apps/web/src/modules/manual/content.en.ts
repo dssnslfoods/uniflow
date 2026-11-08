@@ -440,7 +440,7 @@ export const contentEn: ManualText = {
       { h: '[[settings.tabs.members]]' },
       {
         steps: [
-          'The [[role.admin]] presses [[settings.invite]], enters the email and picks roles. An invitation is sent.',
+          'The [[role.admin]] presses [[settings.invite]], enters the email and picks roles. Choose [[settings.byInvite]] to email an invitation, or [[settings.byPassword]] to create an account that works right away, then give the member the email and password.',
           'Click a member to change roles, or deactivate them when they leave.',
           'Set [[settings.machines]] to limit who can run which machine. [[role.manager]] and [[role.supervisor]] can do this too.',
         ],

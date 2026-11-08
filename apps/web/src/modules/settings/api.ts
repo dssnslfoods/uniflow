@@ -81,19 +81,20 @@ function useInvalidateMembers() {
   return () => qc.invalidateQueries({ queryKey: key })
 }
 
-// Edge Function: creates the account (if new), emails the invitation, adds the membership.
+// Edge Function: creates the account (if new) — by email invitation, or with the given
+// password so it works right away — then adds the membership.
 export function useInviteMember() {
   const invalidate = useInvalidateMembers()
   return useMutation({
-    mutationFn: async ({ email, roles }: { email: string; roles: Role[] }) => {
+    mutationFn: async ({ email, roles, password, fullName }: { email: string; roles: Role[]; password?: string; fullName?: string }) => {
       const { data, error } = await supabase.functions.invoke('invite-member', {
-        body: { email, roles, redirectTo: window.location.origin },
+        body: { email, roles, password, fullName, redirectTo: window.location.origin },
       })
       if (error) {
         const body = await (error as { context?: Response }).context?.json?.().catch(() => null)
         throw Object.assign(new Error(body?.message ?? error.message), { details: body?.code })
       }
-      return data as { invited: boolean }
+      return data as { invited: boolean; created?: boolean; existing?: boolean }
     },
     onSettled: invalidate,
   })

@@ -440,7 +440,7 @@ export const contentTh: ManualText = {
       { h: '[[settings.tabs.members]]' },
       {
         steps: [
-          '[[role.admin]] กด [[settings.invite]] ใส่อีเมล เลือกบทบาท ระบบส่งคำเชิญให้',
+          '[[role.admin]] กด [[settings.invite]] ใส่อีเมล เลือกบทบาท แล้วเลือก [[settings.byInvite]] (ระบบส่งคำเชิญทางอีเมล) หรือ [[settings.byPassword]] (สร้างบัญชีใช้ได้ทันที แล้วแจ้งอีเมลกับรหัสผ่านให้สมาชิกเอง)',
           'คลิกชื่อสมาชิกเพื่อแก้บทบาท หรือปิดการใช้งานเมื่อพนักงานลาออก',
           'กำหนด [[settings.machines]] เพื่อจำกัดว่าใครกดงานเครื่องใดได้ ตรงนี้ [[role.manager]] และ [[role.supervisor]] ทำได้ด้วย',
         ],

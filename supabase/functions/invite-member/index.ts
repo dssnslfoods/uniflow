@@ -1,4 +1,5 @@
-// Invite a person to a print shop by email.
+// Add a person to a print shop: by email invitation, or (with `password`) by creating a
+// ready-to-use account with a password the admin hands over — for staff who don't use email.
 // Without tenantId: the caller's current shop (caller must be its admin).
 // With tenantId: any shop (caller must be a platform admin).
 // The caller's own JWT is used for every permission check (api.add_member / api.admin_add_member
@@ -30,7 +31,7 @@ Deno.serve(async (req) => {
   })
   const admin = createClient(url, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, { auth: { persistSession: false } })
 
-  let body: { email?: string; roles?: string[]; redirectTo?: string; tenantId?: string }
+  let body: { email?: string; roles?: string[]; redirectTo?: string; tenantId?: string; password?: string; fullName?: string }
   try {
     body = await req.json()
   } catch {
@@ -40,6 +41,10 @@ Deno.serve(async (req) => {
   const wanted = (body.roles ?? []).filter((r) => roles.has(r))
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return reply(400, { code: 'member.invalid_email' })
   if (wanted.length === 0) return reply(400, { code: 'member.roles_required' })
+  const password = body.password ?? ''
+  const withPassword = password.length > 0
+  if (withPassword && password.length < 6) return reply(400, { code: 'auth.weak_password' })
+  const fullName = (body.fullName ?? '').trim()
 
   // Check permission before any email goes out.
   if (body.tenantId) {
@@ -56,17 +61,35 @@ Deno.serve(async (req) => {
   const { error: seatError } = await asCaller.schema('api').rpc('assert_can_invite', { p_email: email, p_tenant: body.tenantId ?? null })
   if (seatError) return reply(400, { code: seatError.details ?? 'member.add_failed', message: seatError.message })
 
-  // New address: create the account and send the invitation. Existing account: just add it.
-  const { error: inviteError } = await admin.auth.admin.inviteUserByEmail(email, {
-    redirectTo: body.redirectTo,
-  })
-  const alreadyExists = inviteError && /already|registered|exists/i.test(inviteError.message)
-  if (inviteError && !alreadyExists) return reply(400, { code: 'member.invite_failed', message: inviteError.message })
+  // New address: create the account (with the given password, or by sending an invitation).
+  // Existing account: just add it — its own password is never changed here.
+  const { error: createError } = withPassword
+    ? await admin.auth.admin.createUser({
+        email,
+        password,
+        email_confirm: true,
+        user_metadata: fullName ? { full_name: fullName } : undefined,
+      })
+    : await admin.auth.admin.inviteUserByEmail(email, {
+        redirectTo: body.redirectTo,
+        data: fullName ? { full_name: fullName } : undefined,
+      })
+  const alreadyExists = !!createError && /already|registered|exists/i.test(createError.message)
+  if (createError && !alreadyExists) {
+    const code = (createError as { code?: string }).code
+    if (code === 'weak_password') return reply(400, { code: 'auth.weak_password', message: createError.message })
+    return reply(400, { code: withPassword ? 'member.create_failed' : 'member.invite_failed', message: createError.message })
+  }
 
   const { data: membershipId, error: addError } = body.tenantId
     ? await asCaller.schema('api').rpc('admin_add_member', { p_tenant: body.tenantId, p_email: email, p_roles: wanted })
     : await asCaller.schema('api').rpc('add_member', { p_email: email, p_roles: wanted })
   if (addError) return reply(400, { code: addError.details ?? 'member.add_failed', message: addError.message })
 
-  return reply(200, { membership_id: membershipId, invited: !alreadyExists })
+  return reply(200, {
+    membership_id: membershipId,
+    invited: !withPassword && !alreadyExists,
+    created: withPassword && !alreadyExists,
+    existing: alreadyExists,
+  })
 })

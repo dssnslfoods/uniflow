@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Check, LifeBuoy, Mail, UserPlus } from 'lucide-react'
+import { Check, KeyRound, LifeBuoy, Mail, UserPlus } from 'lucide-react'
 import { useAuth } from '@/app/auth'
 import type { Role } from '@/lib/claims'
 import { errorMessage } from '@/lib/errors'
@@ -117,21 +117,33 @@ function InviteDrawer({ onClose }: { onClose: () => void }) {
   const { t } = useTranslation()
   const toast = useToast()
   const invite = useInviteMember()
+  const [mode, setMode] = useState<'invite' | 'password'>('invite')
   const [email, setEmail] = useState('')
+  const [fullName, setFullName] = useState('')
+  const [password, setPassword] = useState('')
   const [roles, setRoles] = useState<Role[]>(['staff'])
+  const withPassword = mode === 'password'
 
   function submit(e: FormEvent) {
     e.preventDefault()
     invite.mutate(
-      { email: email.trim(), roles },
+      {
+        email: email.trim(),
+        roles,
+        fullName: fullName.trim() || undefined,
+        password: withPassword ? password : undefined,
+      },
       {
         onSuccess: (r) => {
-          toast({ tone: 'success', message: r.invited ? t('settings.invited', { email }) : t('settings.added', { email }) })
+          const key = r.created ? 'settings.created' : r.invited ? 'settings.invited' : withPassword ? 'settings.addedExisting' : 'settings.added'
+          toast({ tone: 'success', message: t(key, { email: email.trim() }) })
           onClose()
         },
       },
     )
   }
+
+  const canSubmit = !!email.trim() && roles.length > 0 && (!withPassword || password.length >= 6)
 
   return (
     <Drawer
@@ -141,18 +153,55 @@ function InviteDrawer({ onClose }: { onClose: () => void }) {
       footer={
         <>
           <Button variant="secondary" onClick={onClose}>{t('common.cancel')}</Button>
-          <Button type="submit" form="invite-form" loading={invite.isPending} disabled={!email.trim() || roles.length === 0}>
-            <Mail className="size-4" aria-hidden />
-            {t('settings.invite')}
+          <Button type="submit" form="invite-form" loading={invite.isPending} disabled={!canSubmit}>
+            {withPassword ? <UserPlus className="size-4" aria-hidden /> : <Mail className="size-4" aria-hidden />}
+            {withPassword ? t('settings.createMember') : t('settings.invite')}
           </Button>
         </>
       }
     >
       <form id="invite-form" onSubmit={submit} className="flex flex-col gap-4">
-        <p className="text-sm text-muted">{t('settings.inviteHint')}</p>
+        <div role="radiogroup" className="grid grid-cols-2 gap-1 rounded-[var(--radius-card)] border border-border bg-surface-2/50 p-1">
+          {(['invite', 'password'] as const).map((m) => (
+            <button
+              key={m}
+              type="button"
+              role="radio"
+              aria-checked={mode === m}
+              onClick={() => { setMode(m); invite.reset() }}
+              className={cn(
+                'inline-flex items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-sm',
+                mode === m ? 'bg-surface font-medium text-fg shadow-sm' : 'text-muted hover:text-fg',
+              )}
+            >
+              {m === 'invite' ? <Mail className="size-4" aria-hidden /> : <KeyRound className="size-4" aria-hidden />}
+              {m === 'invite' ? t('settings.byInvite') : t('settings.byPassword')}
+            </button>
+          ))}
+        </div>
+        <p className="text-sm text-muted">{withPassword ? t('settings.passwordModeHint') : t('settings.inviteHint')}</p>
         <Field label={t('settings.email')}>
           {(id) => <Input id={id} type="email" value={email} onChange={(e) => setEmail(e.target.value)} required autoFocus />}
         </Field>
+        <Field label={t('auth.fullName')}>
+          {(id) => <Input id={id} value={fullName} onChange={(e) => setFullName(e.target.value)} autoComplete="off" />}
+        </Field>
+        {withPassword && (
+          <Field label={t('settings.initialPassword')}>
+            {(id) => (
+              <Input
+                id={id}
+                type="text"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                minLength={6}
+                required
+                autoComplete="new-password"
+                spellCheck={false}
+              />
+            )}
+          </Field>
+        )}
         <div>
           <p className="mb-1.5 text-[13px] font-medium">{t('settings.roles')}</p>
           <RolePicker value={roles} onChange={setRoles} />
