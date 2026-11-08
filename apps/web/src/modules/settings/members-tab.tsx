@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Check, KeyRound, LifeBuoy, Mail, UserPlus } from 'lucide-react'
+import { Check, KeyRound, LifeBuoy, Mail, UserMinus, UserPlus } from 'lucide-react'
 import { useAuth } from '@/app/auth'
 import type { Role } from '@/lib/claims'
 import { errorMessage } from '@/lib/errors'
@@ -11,7 +11,10 @@ import { Field, Input } from '@/shared/ui/input'
 import { ErrorNote, ListSkeleton } from '@/shared/ui/page'
 import { useToast } from '@/shared/ui/toast'
 import { useMachines } from '../masters/machines/api'
-import { useInviteMember, useMembers, useSetMemberRoles, useSetOperatorMachines, type Member } from './api'
+import {
+  useInviteMember, useMembers, useRemoveMember, useSendPasswordReset, useSetMemberName, useSetMemberPassword,
+  useSetMemberRoles, useSetOperatorMachines, type Member,
+} from './api'
 
 const allRoles: Role[] = ['admin', 'executive', 'manager', 'supervisor', 'staff']
 
@@ -108,7 +111,7 @@ export function MembersTab() {
       </div>
 
       {inviting && <InviteDrawer onClose={() => setInviting(false)} />}
-      {editing && <MemberDrawer member={editing} isAdmin={isAdmin} onClose={() => setEditing(null)} />}
+      {editing && <MemberDrawer member={editing} isAdmin={isAdmin} isSelf={editing.user_id === session?.user.id} onClose={() => setEditing(null)} />}
     </div>
   )
 }
@@ -212,18 +215,29 @@ function InviteDrawer({ onClose }: { onClose: () => void }) {
   )
 }
 
-function MemberDrawer({ member, isAdmin, onClose }: { member: Member; isAdmin: boolean; onClose: () => void }) {
+function MemberDrawer({ member, isAdmin, isSelf, onClose }: { member: Member; isAdmin: boolean; isSelf: boolean; onClose: () => void }) {
   const { t } = useTranslation()
   const toast = useToast()
   const machines = useMachines()
   const setRolesM = useSetMemberRoles()
   const setMachinesM = useSetOperatorMachines()
+  const setNameM = useSetMemberName()
+  const setPasswordM = useSetMemberPassword()
+  const sendReset = useSendPasswordReset()
+  const removeM = useRemoveMember()
+  // Name and password belong to the login; change them only when no other shop shares it.
+  const ownAccount = isAdmin && member.only_here
+  const [fullName, setFullName] = useState(member.full_name ?? '')
+  const [newPassword, setNewPassword] = useState('')
   const [roles, setRoles] = useState<Role[]>(member.roles)
   const [active, setActive] = useState(member.is_active)
   const [machineIds, setMachineIds] = useState<string[]>(member.machine_ids)
 
   async function save() {
     try {
+      if (ownAccount && fullName.trim() !== (member.full_name ?? '')) {
+        await setNameM.mutateAsync({ id: member.membership_id, fullName })
+      }
       if (isAdmin && (roles.join() !== member.roles.join() || active !== member.is_active)) {
         await setRolesM.mutateAsync({ id: member.membership_id, roles, active })
       }
@@ -237,6 +251,28 @@ function MemberDrawer({ member, isAdmin, onClose }: { member: Member; isAdmin: b
     }
   }
 
+  function setPassword() {
+    setPasswordM.mutate({ id: member.membership_id, password: newPassword }, {
+      onSuccess: () => { setNewPassword(''); toast({ tone: 'success', message: t('settings.passwordSet') }) },
+      onError: (e) => toast({ tone: 'error', message: errorMessage(e) }),
+    })
+  }
+
+  function reset() {
+    sendReset.mutate(member.email, {
+      onSuccess: () => toast({ tone: 'success', message: t('settings.resetSent', { email: member.email }) }),
+      onError: (e) => toast({ tone: 'error', message: errorMessage(e) }),
+    })
+  }
+
+  function remove() {
+    if (!window.confirm(t('settings.removeConfirm', { name: member.full_name ?? member.email }))) return
+    removeM.mutate(member.membership_id, {
+      onSuccess: () => { toast({ tone: 'success', message: t('settings.removed') }); onClose() },
+      onError: (e) => toast({ tone: 'error', message: errorMessage(e) }),
+    })
+  }
+
   return (
     <Drawer
       open
@@ -245,12 +281,18 @@ function MemberDrawer({ member, isAdmin, onClose }: { member: Member; isAdmin: b
       footer={
         <>
           <Button variant="secondary" onClick={onClose}>{t('common.cancel')}</Button>
-          <Button onClick={save} loading={setRolesM.isPending || setMachinesM.isPending} disabled={roles.length === 0}>{t('common.save')}</Button>
+          <Button onClick={save} loading={setRolesM.isPending || setMachinesM.isPending || setNameM.isPending} disabled={roles.length === 0}>{t('common.save')}</Button>
         </>
       }
     >
       <div className="flex flex-col gap-5">
         <p className="text-sm text-muted">{member.email}</p>
+        {ownAccount && (
+          <Field label={t('settings.memberName')}>
+            {(id) => <Input id={id} value={fullName} onChange={(e) => setFullName(e.target.value)} />}
+          </Field>
+        )}
+        {isAdmin && !member.only_here && <p className="rounded-lg bg-surface-2 px-3 py-2 text-xs text-muted">{t('settings.sharedAccount')}</p>}
         <div>
           <p className="mb-1.5 text-[13px] font-medium">{t('settings.roles')}</p>
           <RolePicker value={roles} onChange={setRoles} disabled={!isAdmin} />
@@ -284,6 +326,29 @@ function MemberDrawer({ member, isAdmin, onClose }: { member: Member; isAdmin: b
             <input type="checkbox" className="accent-[var(--brand)]" checked={active} onChange={(e) => setActive(e.target.checked)} />
             {active ? t('settings.active') : t('settings.inactive')}
           </label>
+        )}
+        {isAdmin && !isSelf && (
+          <section className="flex flex-col gap-3 rounded-lg border border-border p-3">
+            <p className="text-[13px] font-medium">{t('settings.passwordSection')}</p>
+            <Button variant="secondary" size="sm" className="self-start" onClick={reset} loading={sendReset.isPending}>
+              <Mail className="size-3.5" aria-hidden />{t('settings.sendReset')}
+            </Button>
+            {member.only_here && (
+              <div className="flex flex-wrap items-end gap-2">
+                <Field label={t('settings.setPassword')} className="min-w-48 flex-1">
+                  {(id) => <Input id={id} type="text" autoComplete="off" minLength={6} value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder={t('settings.passwordMin')} />}
+                </Field>
+                <Button size="sm" onClick={setPassword} loading={setPasswordM.isPending} disabled={newPassword.length < 6}>
+                  <KeyRound className="size-3.5" aria-hidden />{t('settings.setPasswordBtn')}
+                </Button>
+              </div>
+            )}
+          </section>
+        )}
+        {isAdmin && !isSelf && (
+          <Button variant="ghost" className="self-start text-status-risk" onClick={remove} loading={removeM.isPending}>
+            <UserMinus className="size-4" aria-hidden />{t('settings.removeMember')}
+          </Button>
         )}
       </div>
     </Drawer>

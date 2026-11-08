@@ -12,6 +12,7 @@ import { AppShell } from './app-shell'
 import { LoginPage } from '@/modules/platform/login-page'
 import { OnboardingPage } from '@/modules/platform/onboarding-page'
 import { SetPasswordPage } from '@/modules/platform/set-password-page'
+import { ForgotPasswordPage } from '@/modules/platform/forgot-password-page'
 import { isFloorOnly, isOfficeOnly } from '@/lib/claims'
 import { needsPassword } from '@/lib/supabase'
 import { ModuleGate } from '@/shared/ui/module-gate'
@@ -54,6 +55,12 @@ const loginRoute = createRoute({
     if (context.auth.session) throw redirect({ to: '/' })
   },
   component: LoginPage,
+})
+
+const forgotPasswordRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/forgot-password',
+  component: ForgotPasswordPage,
 })
 
 const setPasswordRoute = createRoute({
@@ -181,6 +188,7 @@ const routeTree = rootRoute.addChildren([
   loginRoute,
   onboardingRoute,
   setPasswordRoute,
+  forgotPasswordRoute,
   appRoute.addChildren([
     indexRoute,
     ordersRoute,

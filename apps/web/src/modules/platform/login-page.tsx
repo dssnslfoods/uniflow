@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
+import { Link } from '@tanstack/react-router'
 import { errorMessage } from '@/lib/errors'
 import { supabase } from '@/lib/supabase'
 import { Button } from '@/shared/ui/button'
@@ -51,6 +52,7 @@ export function LoginPage() {
         </Field>
         <Field label={t('auth.password')}>
           {(id) => (
+            <>
             <Input
               id={id}
               type="password"
@@ -61,6 +63,10 @@ export function LoginPage() {
               onChange={(e) => setPassword(e.target.value)}
               required
             />
+            {mode === 'signin' && (
+              <Link to="/forgot-password" className="-mt-0.5 self-end text-xs text-brand hover:underline">{t('auth.forgot')}</Link>
+            )}
+            </>
           )}
         </Field>
         {error && <p className="rounded-lg bg-status-risk/10 px-3 py-2 text-sm text-status-risk">{error}</p>}

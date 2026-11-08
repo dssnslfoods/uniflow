@@ -61,6 +61,8 @@ export type Member = {
   is_support: boolean
   machine_ids: string[]
   joined_at: string
+  // Belongs to no other shop: only then may this shop's admin change its name or password.
+  only_here: boolean
 }
 
 export function useMembers() {
@@ -108,6 +110,51 @@ export function useSetMemberRoles() {
       if (error) throw error
     },
     onSettled: invalidate,
+  })
+}
+
+export function useSetMemberName() {
+  const invalidate = useInvalidateMembers()
+  return useMutation({
+    mutationFn: async ({ id, fullName }: { id: string; fullName: string }) => {
+      const { error } = await rpc().rpc('set_member_name', { p_membership: id, p_full_name: fullName })
+      if (error) throw error
+    },
+    onSettled: invalidate,
+  })
+}
+
+export function useRemoveMember() {
+  const invalidate = useInvalidateMembers()
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await rpc().rpc('remove_member', { p_membership: id })
+      if (error) throw error
+    },
+    onSettled: invalidate,
+  })
+}
+
+// Edge Function: checks the caller may manage this member, then sets the password.
+export function useSetMemberPassword() {
+  return useMutation({
+    mutationFn: async ({ id, password }: { id: string; password: string }) => {
+      const { error } = await supabase.functions.invoke('set-member-password', { body: { membershipId: id, password } })
+      if (error) {
+        const body = await (error as { context?: Response }).context?.json?.().catch(() => null)
+        throw Object.assign(new Error(body?.message ?? error.message), { details: body?.code })
+      }
+    },
+  })
+}
+
+// The member gets the normal "forgot password" email (code + link) and chooses their own.
+export function useSendPasswordReset() {
+  return useMutation({
+    mutationFn: async (email: string) => {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin })
+      if (error) throw error
+    },
   })
 }
 
