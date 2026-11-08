@@ -345,6 +345,17 @@ export const contentEn: ManualText = {
         ],
       },
       { tip: 'Start the day with [[dashboard.riskJobs]], then adjust the queue on the [[nav.board]].' },
+      { h: 'Staffing & overtime' },
+      { p: 'The [[staffing.title]] card answers: should we add people, is the overtime justified, and how well are people used? Pick 7, 30 or 90 days.' },
+      {
+        defs: [
+          { term: 'Run time', desc: 'Real machine running time from start / pause / finish on the floor.' },
+          { term: 'Overtime', desc: 'Running outside shifts or on holidays, split evenly between the people assigned at the time.' },
+          { term: 'Utilisation', desc: 'In-shift run time ÷ shift hours of the people assigned.' },
+          { term: 'Next 7 days', desc: 'Queued work for the next 7 days ÷ that person\'s shift hours.' },
+        ],
+      },
+      { tip: 'High overtime with low in-shift utilisation means it can be avoided by scheduling; high overtime with high utilisation means people are stretched — consider hiring.' },
     ],
   },
   notifications: {

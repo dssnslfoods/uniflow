@@ -10,6 +10,8 @@ import { formatDate } from '../orders/format'
 import { useMachineLoad } from '../production/api'
 import { useDashboard } from './api'
 import { JobLink } from '../production/job-link'
+import { useAuth } from '@/app/auth'
+import { StaffingCard } from './staffing-card'
 
 // Load state uses the reserved status colours and always shows the % as text (dataviz: never colour alone).
 function loadState(pct: number) {
@@ -23,6 +25,8 @@ export function DashboardPage() {
   const summary = useDashboard()
   const load = useMachineLoad(7)
   const machines = useMachines()
+  const { hasRole } = useAuth()
+  const seesStaffing = hasRole('admin', 'executive', 'manager', 'supervisor')
 
   const loadRows = useMemo(() => {
     const byMachine = new Map<string, { avail: number; planned: number }>()
@@ -153,6 +157,8 @@ export function DashboardPage() {
             </ul>
           )}
         </Card>
+
+        {seesStaffing && <StaffingCard load={load.data ?? []} machines={machines.data ?? []} />}
       </div>
     </div>
   )
