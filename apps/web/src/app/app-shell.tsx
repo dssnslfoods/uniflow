@@ -19,6 +19,10 @@ type NavItem = { to: string; key: string; Icon: typeof Factory; soon?: boolean; 
 
 const navGroups: { key?: string; items: NavItem[] }[] = [
   {
+    items: [{ to: '/dashboard', key: 'dashboard', Icon: Gauge }],
+  },
+  {
+    key: 'workflow',
     items: [
       // In the order work flows: PO → plan approval → materials → schedule → floor → outside → delivery.
       { to: '/orders', key: 'orders', Icon: FileText },
@@ -28,7 +32,6 @@ const navGroups: { key?: string; items: NavItem[] }[] = [
       { to: '/floor', key: 'floor', Icon: Hammer },
       { to: '/outsource', key: 'outsource', Icon: Send, module: 'outsource' },
       { to: '/deliveries', key: 'deliveries', Icon: Truck, module: 'delivery' },
-      { to: '/dashboard', key: 'dashboard', Icon: Gauge },
     ],
   },
   {
