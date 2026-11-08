@@ -8,8 +8,7 @@ import { cn } from '@/lib/utils'
 import { useTenantKey } from '@/shared/data'
 import type { Member } from '../settings/api'
 import type { Machine } from '../masters/machines/api'
-import { formatMinutes } from './api'
-import { initials, personHue, workloadTone, type PersonLoad } from './workload'
+import { capacityLabel, capacityTitle, capacityTone, initials, personHue, type MachineToday } from './workload'
 
 // Drag ids/data for people. Cards use plain step ids; people are prefixed so the two never mix.
 export type PersonDrag = { kind: 'person'; membershipId: string; from: string | null }
@@ -63,20 +62,16 @@ function Avatar({ member, className }: { member: Member; className?: string }) {
   )
 }
 
-export function loadTitle(t: (k: string, o?: Record<string, unknown>) => string, name: string, load?: PersonLoad, machine?: string) {
-  if (!load) return t('staff.unassigned', { name })
-  return t('staff.loadTitle', {
-    name,
-    machine: machine ?? '',
-    q: formatMinutes(t, load.queueMin),
-    a: formatMinutes(t, load.availMin),
-    p: Math.round(load.pct),
-  })
+// Accessible name / tooltip: who, which machine, and that machine's capacity left today.
+function chipTitle(t: (k: string, o?: Record<string, unknown>) => string, name: string, machine?: string, cap?: MachineToday) {
+  if (!machine) return t('staff.unassigned', { name })
+  return `${name} · ${t('staff.onMachine', { machine })} · ${capacityTitle(t, cap)}`
 }
 
 type ChipProps = {
   member: Member
-  load?: PersonLoad
+  // Capacity left today on the machine this person holds (staff strip only).
+  cap?: MachineToday
   from: string | null
   draggable: boolean
   onRemove?: () => void
@@ -87,7 +82,7 @@ type ChipProps = {
 }
 
 // A person pill: avatar, short name and their 7-day workload %. Long-press / drag to move.
-export function PersonChip({ member, load, from, draggable, onRemove, onClick, compact, machine }: ChipProps) {
+export function PersonChip({ member, cap, from, draggable, onRemove, onClick, compact, machine }: ChipProps) {
   const { t } = useTranslation()
   const data: PersonDrag = { kind: 'person', membershipId: member.membership_id, from }
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: personDragId(member.membership_id, from), data, disabled: !draggable })
@@ -101,12 +96,12 @@ export function PersonChip({ member, load, from, draggable, onRemove, onClick, c
         draggable && 'cursor-grab active:cursor-grabbing',
         isDragging && 'opacity-30',
       )}
-      title={loadTitle(t, name, load, machine)}
+      title={chipTitle(t, name, machine, cap)}
       {...attributes}
       {...listeners}
       onClick={onClick}
       role={onClick ? 'button' : attributes.role}
-      aria-label={loadTitle(t, name, load, machine)}
+      aria-label={chipTitle(t, name, machine, cap)}
     >
       <Avatar member={member} />
       {!compact && <span className="max-w-[7.5rem] truncate">{shortName(member)}</span>}
@@ -116,7 +111,7 @@ export function PersonChip({ member, load, from, draggable, onRemove, onClick, c
           <span className="truncate">{machine}</span>
         </span>
       )}
-      {load && <span className={cn('tabular font-semibold', workloadTone(load.pct))}>{Math.round(load.pct)}%</span>}
+      {machine && <span className={cn('tabular whitespace-nowrap font-semibold', capacityTone(cap))}>{capacityLabel(t, cap)}</span>}
       {onRemove && (
         <button
           type="button"
@@ -138,19 +133,18 @@ export function PersonChip({ member, load, from, draggable, onRemove, onClick, c
 }
 
 // Floating copy shown under the finger/pointer while dragging.
-export function PersonChipOverlay({ member, load }: { member: Member; load?: PersonLoad }) {
+export function PersonChipOverlay({ member }: { member: Member }) {
   return (
     <span className="inline-flex items-center gap-1 rounded-full border border-brand bg-surface py-0.5 pl-0.5 pr-2 text-xs shadow-xl ring-2 ring-brand/30">
       <Avatar member={member} />
       <span className="max-w-[8rem] truncate">{shortName(member)}</span>
-      {load && <span className={cn('tabular font-semibold', workloadTone(load.pct))}>{Math.round(load.pct)}%</span>}
     </span>
   )
 }
 
 type StripProps = {
   members: Member[]
-  loads: Map<string, PersonLoad>
+  capacity: Map<string, MachineToday>
   machines: Machine[]
   canAssign: boolean
   dragging: boolean
@@ -158,7 +152,7 @@ type StripProps = {
 }
 
 // Everyone who can be put on a machine. Drop a person back here to take them off that machine.
-export function StaffStrip({ members, loads, machines, canAssign, dragging, onPick }: StripProps) {
+export function StaffStrip({ members, capacity, machines, canAssign, dragging, onPick }: StripProps) {
   const { t } = useTranslation()
   const data: PersonDrop = { kind: 'person', machineId: null }
   const { setNodeRef, isOver } = useDroppable({ id: STAFF_STRIP, data, disabled: !canAssign })
@@ -186,7 +180,7 @@ export function StaffStrip({ members, loads, machines, canAssign, dragging, onPi
           <PersonChip
             key={m.membership_id}
             member={m}
-            load={loads.get(m.membership_id)}
+            cap={m.machine_ids[0] ? capacity.get(m.machine_ids[0]) : undefined}
             from={m.machine_ids[0] ?? null}
             machine={m.machine_ids[0] ? machineName.get(m.machine_ids[0]) ?? '—' : undefined}
             draggable={canAssign}

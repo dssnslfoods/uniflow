@@ -48,7 +48,7 @@ import {
 } from './api'
 import { useRelease } from './use-release'
 import { useMembers, type Member } from '../settings/api'
-import { personWorkload, type PersonLoad } from './workload'
+import { capacityBar, capacityLabel, capacityTitle, capacityTone, machineToday, type MachineToday } from './workload'
 import {
   PersonChip,
   PersonChipOverlay,
@@ -205,7 +205,8 @@ export function BoardPage() {
     staff.forEach((m) => m.machine_ids.forEach((mid) => map.set(mid, [...(map.get(mid) ?? []), m.membership_id])))
     return map
   }, [staff])
-  const personLoads = useMemo(() => personWorkload(load.data ?? [], operatorsByMachine), [load.data, operatorsByMachine])
+  // Capacity left today per machine: shift minutes today minus today's cards (one person = one machine).
+  const capacity = useMemo(() => machineToday(steps, load.data ?? []), [steps, load.data])
   const assignable = visibleMachines.filter((m) => m.status !== 'inactive')
 
   // One person, one machine: dropping someone on a machine moves them there; to = null takes them off.
@@ -407,7 +408,7 @@ export function BoardPage() {
         <DndContext sensors={sensors} collisionDetection={collision} onDragStart={onDragStart} onDragOver={onDragOver} onDragEnd={onDragEnd} onDragCancel={() => { setActiveId(null); setActivePerson(null); setColumns(serverColumns) }}>
           <StaffStrip
             members={staff}
-            loads={personLoads}
+            capacity={capacity}
             machines={assignable}
             canAssign={canMove}
             dragging={!!activePerson?.from}
@@ -434,7 +435,7 @@ export function BoardPage() {
                   dragging={!!active || !!activePerson}
                   personDragging={!!activePerson}
                   operators={col.machine ? (operatorsByMachine.get(col.machine.id) ?? []).map((id) => memberById.get(id)!).filter(Boolean) : []}
-                  personLoads={personLoads}
+                  capacity={col.machine ? capacity.get(col.machine.id) : undefined}
                   canAssign={canMove}
                   onRemoveOperator={(membershipId) => runAssign(membershipId, null)}
                   backlog={backlog}
@@ -476,7 +477,7 @@ export function BoardPage() {
           <DragOverlay dropAnimation={{ duration: 160 }}>
             {active && <Card step={active} processName={processName.get(active.process_id) ?? '—'} lifted />}
             {activePerson && memberById.get(activePerson.membershipId) && (
-              <PersonChipOverlay member={memberById.get(activePerson.membershipId)!} load={personLoads.get(activePerson.membershipId)} />
+              <PersonChipOverlay member={memberById.get(activePerson.membershipId)!} />
             )}
           </DragOverlay>
         </DndContext>
@@ -508,13 +509,13 @@ type ColumnProps = {
   activeEst: number | null
   personDragging: boolean
   operators: Member[]
-  personLoads: Map<string, PersonLoad>
+  capacity?: MachineToday
   canAssign: boolean
   onRemoveOperator: (membershipId: string) => void
   children: ReactNode
 }
 
-function Column({ id, machine, ids, valid, dragging, backlog, load, preview, activeEst, personDragging, operators, personLoads, canAssign, onRemoveOperator, children }: ColumnProps) {
+function Column({ id, machine, ids, valid, dragging, backlog, load, preview, activeEst, personDragging, operators, capacity, canAssign, onRemoveOperator, children }: ColumnProps) {
   const { t } = useTranslation()
   // Card and person targets stay registered all drag long (so they are measured when it starts);
   // the collision filter decides which kind a drag can hit.
@@ -546,7 +547,6 @@ function Column({ id, machine, ids, valid, dragging, backlog, load, preview, act
               <PersonChip
                 key={m.membership_id}
                 member={m}
-                load={personLoads.get(m.membership_id)}
                 from={machine.id}
                 draggable={canAssign}
                 onRemove={canAssign ? () => onRemoveOperator(m.membership_id) : undefined}
@@ -565,17 +565,20 @@ function Column({ id, machine, ids, valid, dragging, backlog, load, preview, act
         )}
         {load && (
           <div className="grid grid-cols-2 gap-2 text-[11px] text-muted">
-            {(['today', 'week'] as const).map((k) => {
-              const pct = Math.round(load[k])
-              return (
-                <div key={k}>
-                  <div className="flex justify-between"><span>{t(`board.${k}`)}</span><span className="tabular font-medium text-fg">{pct}%</span></div>
-                  <div className="mt-0.5 h-1.5 overflow-hidden rounded-full bg-surface">
-                    <div className={cn('h-full rounded-full', loadTone(pct))} style={{ width: `${Math.min(pct, 100)}%` }} />
-                  </div>
-                </div>
-              )
-            })}
+            {/* Today: capacity left (same number as the staff chips); bar = used. Week: load. */}
+            <div title={capacityTitle(t, capacity)}>
+              <div className="flex justify-between gap-1"><span>{t('board.today')}</span><span className={cn('tabular font-semibold', capacityTone(capacity))}>{capacityLabel(t, capacity)}</span></div>
+              <div className="mt-0.5 h-1.5 overflow-hidden rounded-full bg-surface">
+                <div className={cn('h-full rounded-full', capacityBar(capacity))}
+                  style={{ width: `${capacity?.leftPct == null ? 0 : Math.min(100 - capacity.leftPct + capacity.overPct, 100)}%` }} />
+              </div>
+            </div>
+            <div title={t('board.weekLoadHint')}>
+              <div className="flex justify-between gap-1"><span>{t('board.weekLoad')}</span><span className="tabular font-medium text-fg">{Math.round(load.week)}%</span></div>
+              <div className="mt-0.5 h-1.5 overflow-hidden rounded-full bg-surface">
+                <div className={cn('h-full rounded-full', loadTone(Math.round(load.week)))} style={{ width: `${Math.min(Math.round(load.week), 100)}%` }} />
+              </div>
+            </div>
           </div>
         )}
         <div className="flex justify-between text-[11px] text-muted">

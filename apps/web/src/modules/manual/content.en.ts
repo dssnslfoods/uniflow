@@ -195,7 +195,7 @@ export const contentEn: ManualText = {
       { h: 'Putting people on machines' },
       {
         steps: [
-          'The [[staff.strip]] bar under the board header lists everyone with their workload % for the next 7 days.',
+          'The [[staff.strip]] bar under the board header lists everyone; people on a machine carry its name and how much of it is still free today.',
           'Drag a name onto a machine column (on a tablet or phone, press and hold first), or tap a name and pick the machine they look after.',
           'Drag a name from one column header to another to move them; drag it back to the bar or press ✕ to take them off.',
         ],
@@ -205,7 +205,8 @@ export const contentEn: ManualText = {
           'Each person looks after one machine. Dropping them on another machine moves them (the old period is closed for you); their name in the staff bar is tagged with their machine.',
           'People can be dropped on machine columns only, not on [[board.unscheduled]], [[board.outsource]] or [[board.manual]].',
           'A machine may have several people; its queue is split evenly between them.',
-          '**Workload %** = 7-day queue of their machines ÷ their shift hours. Over 100% (red) means more work than the person can do.',
+          '**% free** = 100 − (planned time of the cards starting on the machine today ÷ its shift time today). Green = plenty left, amber = 20% or less, red = full or "over" (more work today than the shift). "No shift" means the machine does not run today. Hover or tap the number for shift hours, card count and time left.',
+          'A machine column shows [[board.today]] as % free (the same number as on the staff tags) and [[board.weekLoad]] as queued work against 7 days of shift time.',
           'Staff assigned to machines can start work only on their own machines on the floor.',
           'Every assignment is kept with who, which machine, when, and who made it — for the [[staffing.title]] report on the [[nav.dashboard]].',
           'Only admin, manager and supervisor can assign; everyone else sees it read-only.',

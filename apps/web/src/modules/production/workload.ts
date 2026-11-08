@@ -1,4 +1,5 @@
-import type { LoadRow } from './api'
+import { localDate } from '@/shared/locale'
+import type { BoardStep, LoadRow } from './api'
 
 // Workload of the people assigned to machines, from the machine load rows (planned minutes and
 // shift minutes per machine per day). A machine's queue is split evenly between the people on it;
@@ -51,6 +52,85 @@ export function personHue(id: string) {
   return h
 }
 
+
+// 7-day workload tone (staffing report).
 export function workloadTone(pct: number) {
   return pct > 100 ? 'text-status-risk' : pct >= 80 ? 'text-status-paused' : 'text-status-done'
+}
+
+// Capacity a machine still has today: its shift minutes today minus the planned minutes of the
+// cards that start on it today (same rule as api.machine_load). leftPct is null when the machine
+// has no shift today; overPct > 0 when today's cards need more than the shift.
+export type MachineToday = {
+  availMin: number
+  plannedMin: number
+  cards: number
+  leftMin: number
+  leftPct: number | null
+  overPct: number
+}
+
+const OPEN = new Set(['pending', 'ready', 'in_progress', 'paused'])
+
+export function machineToday(steps: BoardStep[], rows: LoadRow[]): Map<string, MachineToday> {
+  const today = localDate()
+  const out = new Map<string, MachineToday>()
+  const get = (id: string) => {
+    let v = out.get(id)
+    if (!v) out.set(id, (v = { availMin: 0, plannedMin: 0, cards: 0, leftMin: 0, leftPct: null, overPct: 0 }))
+    return v
+  }
+  rows.forEach((r) => {
+    if (r.day === today) get(r.machine_id).availMin = Number(r.available_min)
+  })
+  steps.forEach((s) => {
+    if (!s.machine_id || !s.planned_start || s.job.status !== 'in_production' || !OPEN.has(s.status)) return
+    const d = new Date(s.planned_start)
+    const day = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+    if (day !== today) return
+    const v = get(s.machine_id)
+    v.cards += 1
+    v.plannedMin += Number(s.est_minutes ?? 0)
+  })
+  out.forEach((v) => {
+    if (v.availMin <= 0) return
+    const used = (v.plannedMin / v.availMin) * 100
+    v.leftMin = Math.max(v.availMin - v.plannedMin, 0)
+    v.leftPct = Math.max(Math.round(100 - used), 0)
+    v.overPct = used > 100 ? Math.round(used - 100) : 0
+  })
+  return out
+}
+
+// Plenty left = green, 20% or less = amber, full or over = red. No shift = muted.
+export function capacityTone(c?: MachineToday) {
+  if (!c || c.leftPct == null) return 'text-muted'
+  return c.overPct > 0 || c.leftPct === 0 ? 'text-status-risk' : c.leftPct <= 20 ? 'text-status-paused' : 'text-status-done'
+}
+
+export function capacityBar(c?: MachineToday) {
+  if (!c || c.leftPct == null) return 'bg-surface-2'
+  return c.overPct > 0 || c.leftPct === 0 ? 'bg-status-risk' : c.leftPct <= 20 ? 'bg-status-paused' : 'bg-status-done'
+}
+
+type T = (k: string, o?: Record<string, unknown>) => string
+const hrs = (t: T, min: number) => t('capacity.h', { h: (Math.round((min / 60) * 10) / 10).toLocaleString() })
+
+// Short label: "ว่าง 63%", "เต็ม", "เกิน 25%", "ไม่มีกะ".
+export function capacityLabel(t: T, c?: MachineToday) {
+  if (!c || c.leftPct == null) return t('capacity.noShift')
+  if (c.overPct > 0) return t('capacity.over', { p: c.overPct })
+  if (c.leftPct === 0) return t('capacity.full')
+  return t('capacity.left', { p: c.leftPct })
+}
+
+// Tooltip: "วันนี้ กะ 8 ชม. · งาน 3 การ์ด 3 ชม. · ว่าง 5 ชม. (63%)".
+export function capacityTitle(t: T, c?: MachineToday) {
+  if (!c || c.leftPct == null) return t('capacity.titleNoShift', { n: c?.cards ?? 0 })
+  return t('capacity.title', {
+    a: hrs(t, c.availMin),
+    n: c.cards,
+    w: hrs(t, c.plannedMin),
+    rest: c.overPct > 0 ? t('capacity.overBy', { h: hrs(t, c.plannedMin - c.availMin), p: c.overPct }) : t('capacity.leftBy', { h: hrs(t, c.leftMin), p: c.leftPct }),
+  })
 }
