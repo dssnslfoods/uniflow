@@ -12,12 +12,14 @@ const styles: Record<SoStatus, { cls: string; Icon: typeof CircleCheck }> = {
   cancelled: { cls: 'bg-status-risk/10 text-status-risk', Icon: CircleX },
 }
 
-export function SoStatusPill({ status }: { status: SoStatus }) {
+// prefix names what the status belongs to where other statuses sit nearby (e.g. "PO" on the plan page).
+export function SoStatusPill({ status, prefix }: { status: SoStatus; prefix?: string }) {
   const { t } = useTranslation()
   const { cls, Icon } = styles[status]
   return (
     <span className={cn('inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-medium', cls)}>
       <Icon className="size-3.5" aria-hidden />
+      {prefix && <span className="opacity-70">{prefix} ·</span>}
       {t(`soStatus.${status}`)}
     </span>
   )

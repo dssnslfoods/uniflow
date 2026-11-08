@@ -231,6 +231,7 @@ const th = {
     cancelled: 'ยกเลิก',
   },
   plan: {
+    state: { pending: 'แผนรออนุมัติ ({{n}} Job)', planning: 'กำลังวางแผน ({{n}} Job)', approved: 'แผนอนุมัติแล้ว รอปล่อยเข้าผลิต ({{n}} Job)' },
     outsource: 'ส่งให้ข้างนอกทำ',
     vendor: 'Vendor',
     outsourceNote: 'รายละเอียดงานจ้าง',
@@ -1220,6 +1221,7 @@ const en: typeof th = {
     cancelled: 'Cancelled',
   },
   plan: {
+    state: { pending: 'Plan awaiting approval ({{n}} job)', planning: 'Planning ({{n}} job)', approved: 'Plan approved, not released ({{n}} job)' },
     outsource: 'Send outside',
     vendor: 'Vendor',
     outsourceNote: 'Work details',

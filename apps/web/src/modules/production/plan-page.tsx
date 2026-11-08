@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState, type ButtonHTMLAttributes, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from '@tanstack/react-router'
-import { AlertTriangle, ArrowDown, ArrowLeft, ArrowUp, CheckCircle2, GitFork, Lock, Pencil, Play, Plus, Send, Trash2, Truck, X } from 'lucide-react'
+import { AlertTriangle, ArrowDown, ArrowLeft, ArrowUp, CheckCircle2, Clock, GitFork, Lock, Pencil, Play, Plus, Send, Trash2, Truck, X } from 'lucide-react'
 import { useAuth } from '@/app/auth'
 import { errorMessage } from '@/lib/errors'
 import { cn } from '@/lib/utils'
@@ -100,6 +100,16 @@ export function PlanPage({ orderId }: { orderId: string }) {
 
   const onRelease = release.run
 
+  // The plan's own state, next to the PO's, so "PO confirmed" is not read as "plan approved".
+  const pendingJobs = live.filter((j) => j.status === 'pending_approval').length
+  const planState = pendingJobs
+    ? { key: 'pending', n: pendingJobs, cls: 'bg-status-paused/10 text-status-paused', Icon: Clock }
+    : planning.length
+      ? { key: 'planning', n: planning.length, cls: 'bg-status-pending/10 text-status-pending', Icon: Pencil }
+      : approved.length
+        ? { key: 'approved', n: approved.length, cls: 'bg-status-done/10 text-status-done', Icon: CheckCircle2 }
+        : null
+
   const blocker = !planning.length
     ? t('plan.blockNothing')
     : !covered
@@ -130,7 +140,13 @@ export function PlanPage({ orderId }: { orderId: string }) {
           <h1 className="text-xl font-semibold">{t('plan.title')} · {so.doc_no}</h1>
           <p className="text-sm text-muted">PO {so.customer_po_no} · {t('orders.dueDate')} {formatDate(so.due_date)}</p>
         </div>
-        <SoStatusPill status={so.status} />
+        <SoStatusPill status={so.status} prefix="PO" />
+        {planState && (
+          <span className={cn('inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-medium', planState.cls)}>
+            <planState.Icon className="size-3.5" aria-hidden />
+            {t(`plan.state.${planState.key}`, { n: planState.n })}
+          </span>
+        )}
         {canPlan && approved.length > 0 && (
           <Button className="ml-auto" onClick={() => onRelease(approved.map((j) => j.id))} loading={release.isPending}>
             <Play className="size-4" aria-hidden />
