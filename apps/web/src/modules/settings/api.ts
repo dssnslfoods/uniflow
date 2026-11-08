@@ -158,17 +158,25 @@ export function useSendPasswordReset() {
   })
 }
 
-// Replace the machines a member operates.
+// Replace the machines a member operates. Only the difference is written, so the dated
+// assignment history (machine_assignments) is not closed and reopened for unchanged machines.
 export function useSetOperatorMachines() {
   const invalidate = useInvalidateMembers()
   return useMutation({
     mutationFn: async ({ membershipId, machineIds }: { membershipId: string; machineIds: string[] }) => {
-      const { error: delError } = await db().from('machine_operators').delete().eq('membership_id', membershipId)
-      if (delError) throw delError
-      if (machineIds.length) {
+      const { data: current, error: readError } = await db().from('machine_operators').select('machine_id').eq('membership_id', membershipId)
+      if (readError) throw readError
+      const have = new Set((current ?? []).map((r: { machine_id: string }) => r.machine_id))
+      const removed = [...have].filter((id) => !machineIds.includes(id))
+      const added = machineIds.filter((id) => !have.has(id))
+      if (removed.length) {
+        const { error } = await db().from('machine_operators').delete().eq('membership_id', membershipId).in('machine_id', removed)
+        if (error) throw error
+      }
+      if (added.length) {
         const { error } = await db()
           .from('machine_operators')
-          .insert(machineIds.map((machine_id) => ({ machine_id, membership_id: membershipId })))
+          .insert(added.map((machine_id) => ({ machine_id, membership_id: membershipId })))
         if (error) throw error
       }
     },

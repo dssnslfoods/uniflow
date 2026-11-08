@@ -192,6 +192,23 @@ export const contentEn: ManualText = {
           'Press [[board.refresh]] to recalculate the queue from the current time.',
         ],
       },
+      { h: 'Putting people on machines' },
+      {
+        steps: [
+          'The [[staff.strip]] bar under the board header lists everyone with their workload % for the next 7 days.',
+          'Drag a name onto a machine column (on a tablet or phone, press and hold first), or tap a name and tick the machines they look after.',
+          'Drag a name from one column header to another to move them; drag it back to the bar or press ✕ to take them off.',
+        ],
+      },
+      {
+        bullets: [
+          'One person may look after several machines and a machine may have several people; its queue is split evenly between them.',
+          '**Workload %** = 7-day queue of their machines ÷ their shift hours. Over 100% (red) means more work than the person can do.',
+          'Staff assigned to machines can start work only on their own machines on the floor.',
+          'Every assignment is kept with who, which machine, when, and who made it — for the [[staffing.title]] report on the [[nav.dashboard]].',
+          'Only admin, manager and supervisor can assign; everyone else sees it read-only.',
+        ],
+      },
       { tip: 'Each machine\'s Load bar compares queued work with working time. Over 100% means the machine is overbooked: move work or add a shift.' },
     ],
   },

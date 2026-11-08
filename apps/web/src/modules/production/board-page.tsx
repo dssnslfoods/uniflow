@@ -4,6 +4,8 @@ import { useTranslation } from 'react-i18next'
 import { JobLink } from './job-link'
 import {
   closestCorners,
+  pointerWithin,
+  rectIntersection,
   DndContext,
   DragOverlay,
   KeyboardSensor,
@@ -14,6 +16,7 @@ import {
   useSensors,
   type DragEndEvent,
   type DragOverEvent,
+  type CollisionDetection,
   type DragStartEvent,
 } from '@dnd-kit/core'
 import { SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable'
@@ -44,11 +47,33 @@ import {
   type LoadRow,
 } from './api'
 import { useRelease } from './use-release'
+import { useMembers, type Member } from '../settings/api'
+import { personWorkload, type PersonLoad } from './workload'
+import {
+  PersonChip,
+  PersonChipOverlay,
+  StaffStrip,
+  useAssignOperator,
+  useStaffDrop,
+  type PersonDrag,
+  type PersonDrop,
+} from './staff-assign'
 
 // Column ids: 'unscheduled' | 'outsource' | 'manual' | 'm:<machine id>' (design §8.1)
 type ColumnId = string
 const machineCol = (id: string) => `m:${id}`
 const machineOf = (col: ColumnId) => (col.startsWith('m:') ? col.slice(2) : null)
+const isPerson = (data: unknown): boolean => (data as { kind?: string } | undefined)?.kind === 'person'
+
+// Cards and people share one DndContext: each only ever collides with its own kind of target.
+// People drop where the pointer/finger is; cards keep the sortable "closest corners" feel.
+const collision: CollisionDetection = (args) => {
+  const person = isPerson(args.active.data.current)
+  const droppableContainers = args.droppableContainers.filter((c) => isPerson(c.data.current) === person)
+  if (!person) return closestCorners({ ...args, droppableContainers })
+  const hit = pointerWithin({ ...args, droppableContainers })
+  return hit.length ? hit : rectIntersection({ ...args, droppableContainers })
+}
 
 // Stable colour per job so its cards can be followed across machines.
 function jobHue(id: string) {
@@ -74,6 +99,9 @@ export function BoardPage() {
   const release = useRelease()
   const reschedule = useReschedule()
   const canMove = hasRole('admin', 'manager', 'supervisor')
+  const members = useMembers()
+  const assign = useAssignOperator()
+  const [activePerson, setActivePerson] = useState<PersonDrag | null>(null)
   const [openStep, setOpenStep] = useState<string | null>(null)
 
   // The schedule is relative to "now": refresh it once when the board opens.
@@ -163,6 +191,40 @@ export function BoardPage() {
 
   const active = activeId ? byId.get(activeId) ?? null : null
 
+  // People who can look after a machine, and their 7-day workload from the machines they are on.
+  const staff = useMemo(
+    () =>
+      (members.data ?? [])
+        .filter((m) => m.is_active && !m.is_support)
+        .sort((a, b) => Number(!a.roles.includes('staff')) - Number(!b.roles.includes('staff'))),
+    [members.data],
+  )
+  const memberById = useMemo(() => new Map(staff.map((m) => [m.membership_id, m])), [staff])
+  const operatorsByMachine = useMemo(() => {
+    const map = new Map<string, string[]>()
+    staff.forEach((m) => m.machine_ids.forEach((mid) => map.set(mid, [...(map.get(mid) ?? []), m.membership_id])))
+    return map
+  }, [staff])
+  const personLoads = useMemo(() => personWorkload(load.data ?? [], operatorsByMachine), [load.data, operatorsByMachine])
+  const assignable = visibleMachines.filter((m) => m.status !== 'inactive')
+
+  function runAssign(membershipId: string, to: string | null, from: string | null) {
+    if (to === from) return
+    const who = memberById.get(membershipId)
+    const name = who ? (who.full_name?.trim() || who.email) : ''
+    assign.mutate(
+      { membershipId, to, from },
+      {
+        onSuccess: () =>
+          toast({
+            tone: 'success',
+            message: to ? t('staff.assigned', { name, machine: machineName.get(to) ?? '' }) : t('staff.removed', { name, machine: machineName.get(from ?? '') ?? '' }),
+          }),
+        onError: (err) => toast({ tone: 'error', message: errorMessage(err) }),
+      },
+    )
+  }
+
   // Where may the dragged card go? Capable, active machines — or back to "unscheduled".
   const canDropOn = (col: ColumnId, s: BoardStep | null) => {
     if (!s) return false
@@ -183,11 +245,13 @@ export function BoardPage() {
   )
 
   function onDragStart(e: DragStartEvent) {
+    if (isPerson(e.active.data.current)) return setActivePerson(e.active.data.current as PersonDrag)
     setActiveId(String(e.active.id))
     dragOrigin.current = findColumn(String(e.active.id)) ?? null
   }
 
   function onDragOver(e: DragOverEvent) {
+    if (isPerson(e.active.data.current)) return
     const id = String(e.active.id)
     const overId = e.over ? String(e.over.id) : null
     if (!overId) return
@@ -203,6 +267,16 @@ export function BoardPage() {
   }
 
   function onDragEnd(e: DragEndEvent) {
+    if (isPerson(e.active.data.current)) {
+      const drag = e.active.data.current as PersonDrag
+      const drop = e.over?.data.current as PersonDrop | undefined
+      setActivePerson(null)
+      if (!drop || !isPerson(drop)) return
+      // Onto a machine: assign (or move, when dragged from another machine). Onto the strip: take off.
+      if (drop.machineId) runAssign(drag.membershipId, drop.machineId, drag.from)
+      else if (drag.from) runAssign(drag.membershipId, null, drag.from)
+      return
+    }
     const id = String(e.active.id)
     const step = byId.get(id)
     const overId = e.over ? String(e.over.id) : null
@@ -328,11 +402,21 @@ export function BoardPage() {
           onOpenStep={setOpenStep}
         />
       ) : (
-        <DndContext sensors={sensors} collisionDetection={closestCorners} onDragStart={onDragStart} onDragOver={onDragOver} onDragEnd={onDragEnd} onDragCancel={() => { setActiveId(null); setColumns(serverColumns) }}>
+        <DndContext sensors={sensors} collisionDetection={collision} onDragStart={onDragStart} onDragOver={onDragOver} onDragEnd={onDragEnd} onDragCancel={() => { setActiveId(null); setActivePerson(null); setColumns(serverColumns) }}>
+          <StaffStrip
+            members={staff}
+            loads={personLoads}
+            machines={assignable}
+            canAssign={canMove}
+            dragging={!!activePerson?.from}
+            onToggle={(membershipId, machineId, on) => runAssign(membershipId, on ? machineId : null, on ? null : machineId)}
+          />
           <div className="-mx-4 flex min-h-0 flex-1 snap-x snap-mandatory gap-3 overflow-x-auto scroll-px-4 px-4 pb-4 sm:-mx-6 sm:scroll-px-6 sm:px-6 lg:-mx-8 lg:snap-none lg:px-8">
             {columnList.map((col) => {
               const ids = columns[col.id] ?? []
-              const valid = !active || canDropOn(col.id, active) || findColumn(active.id) === col.id
+              const valid = activePerson
+                ? !!col.machine && col.machine.status !== 'inactive'
+                : !active || canDropOn(col.id, active) || findColumn(active.id) === col.id
               const backlog = ids.reduce((sum, id) => sum + Number(byId.get(id)?.est_minutes ?? 0), 0)
               const l = col.machine ? loadBy.get(col.machine.id) : undefined
               const preview = active && col.machine && valid && l && l.weekAvail > 0 && findColumn(active.id) !== col.id
@@ -345,7 +429,12 @@ export function BoardPage() {
                   machine={col.machine}
                   ids={ids}
                   valid={valid}
-                  dragging={!!active}
+                  dragging={!!active || !!activePerson}
+                  personDragging={!!activePerson}
+                  operators={col.machine ? (operatorsByMachine.get(col.machine.id) ?? []).map((id) => memberById.get(id)!).filter(Boolean) : []}
+                  personLoads={personLoads}
+                  canAssign={canMove}
+                  onRemoveOperator={(membershipId) => col.machine && runAssign(membershipId, null, col.machine.id)}
                   backlog={backlog}
                   load={l}
                   preview={preview}
@@ -384,6 +473,9 @@ export function BoardPage() {
           </div>
           <DragOverlay dropAnimation={{ duration: 160 }}>
             {active && <Card step={active} processName={processName.get(active.process_id) ?? '—'} lifted />}
+            {activePerson && memberById.get(activePerson.membershipId) && (
+              <PersonChipOverlay member={memberById.get(activePerson.membershipId)!} load={personLoads.get(activePerson.membershipId)} />
+            )}
           </DragOverlay>
         </DndContext>
       )}
@@ -412,21 +504,30 @@ type ColumnProps = {
   load?: { today: number; week: number }
   preview: number | null
   activeEst: number | null
+  personDragging: boolean
+  operators: Member[]
+  personLoads: Map<string, PersonLoad>
+  canAssign: boolean
+  onRemoveOperator: (membershipId: string) => void
   children: ReactNode
 }
 
-function Column({ id, machine, ids, valid, dragging, backlog, load, preview, activeEst, children }: ColumnProps) {
+function Column({ id, machine, ids, valid, dragging, backlog, load, preview, activeEst, personDragging, operators, personLoads, canAssign, onRemoveOperator, children }: ColumnProps) {
   const { t } = useTranslation()
+  // Card and person targets stay registered all drag long (so they are measured when it starts);
+  // the collision filter decides which kind a drag can hit.
   const { setNodeRef, isOver } = useDroppable({ id, disabled: !valid })
+  const staffDrop = useStaffDrop(machine?.id ?? null, canAssign && !!machine && machine.status !== 'inactive')
   const title = machine ? machine.name : t(`board.${id}`)
   const Icon = id === 'unscheduled' ? Inbox : id === 'outsource' ? Users : id === 'manual' ? Users : null
 
   return (
     <section
+      ref={staffDrop.setNodeRef}
       className={cn(
         'flex w-[min(18rem,82vw)] shrink-0 snap-start flex-col rounded-[var(--radius-card)] border bg-surface-2/60 transition-opacity',
         dragging && !valid && 'opacity-40',
-        isOver && valid ? 'border-brand ring-2 ring-brand/30' : 'border-border',
+        (isOver || staffDrop.isOver) && valid ? 'border-brand ring-2 ring-brand/30' : 'border-border',
         id === 'unscheduled' && 'border-dashed',
       )}
       aria-label={title}
@@ -437,6 +538,23 @@ function Column({ id, machine, ids, valid, dragging, backlog, load, preview, act
           <h2 className="min-w-0 flex-1 truncate font-semibold">{title}</h2>
           <span className="tabular rounded bg-surface px-1.5 text-xs text-muted">{ids.length}</span>
         </div>
+        {machine && (operators.length > 0 || personDragging || canAssign) && (
+          <div className={cn('flex min-h-7 flex-wrap items-center gap-1', personDragging && 'rounded-md border border-dashed border-brand/50 p-1')}>
+            {operators.map((m) => (
+              <PersonChip
+                key={m.membership_id}
+                member={m}
+                load={personLoads.get(m.membership_id)}
+                from={machine.id}
+                draggable={canAssign}
+                onRemove={canAssign ? () => onRemoveOperator(m.membership_id) : undefined}
+              />
+            ))}
+            {operators.length === 0 && (
+              <span className="text-[11px] text-muted">{personDragging ? t('staff.dropHere') : t('staff.noOperator')}</span>
+            )}
+          </div>
+        )}
         {machine?.status === 'maintenance' && (
           <span className="flex items-center gap-1 text-xs text-status-paused">
             <Wrench className="size-3.5" aria-hidden />
