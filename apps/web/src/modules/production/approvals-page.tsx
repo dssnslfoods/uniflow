@@ -84,11 +84,12 @@ function OrderGroup({ jobs, submits, names, canDecide }: GroupProps) {
     )
   }
 
-  function sendBack(jobId: string, requestChange: boolean) {
+  // One way back: the job returns to planning with the manager's reason.
+  function sendBack(jobId: string) {
     const reason = window.prompt(t('approvals.reason'))
     if (!reason?.trim()) return
     reject.mutate(
-      { p_jobs: [jobId], p_reason: reason, p_request_change: requestChange },
+      { p_jobs: [jobId], p_reason: reason, p_request_change: true },
       {
         onSuccess: () => toast({ tone: 'success', message: t('approvals.rejectedToast') }),
         onError: (e) => toast({ tone: 'error', message: errorMessage(e) }),
@@ -134,8 +135,7 @@ function OrderGroup({ jobs, submits, names, canDecide }: GroupProps) {
           <JobSummary key={job.id} job={job} first={i === 0}>
             {canDecide && (
               <div className="flex gap-1">
-                <Button variant="ghost" size="sm" onClick={() => sendBack(job.id, true)}>{t('approvals.requestChange')}</Button>
-                <Button variant="ghost" size="sm" className="text-status-risk" onClick={() => sendBack(job.id, false)}>{t('approvals.reject')}</Button>
+                <Button variant="ghost" size="sm" className="text-status-risk" onClick={() => sendBack(job.id)}>{t('approvals.sendBack')}</Button>
               </div>
             )}
           </JobSummary>

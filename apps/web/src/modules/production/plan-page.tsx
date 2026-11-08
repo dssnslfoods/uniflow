@@ -514,7 +514,7 @@ function JobCard({ job, lines, approvals, canPlan, onDirty }: CardProps) {
       {sentBack && (
         <p className="flex items-start gap-2 border-b border-border bg-status-risk/5 px-5 py-2.5 text-sm text-status-risk">
           <AlertTriangle className="mt-0.5 size-4 shrink-0" aria-hidden />
-          <span><b>{lastDecision.action === 'reject' ? t('plan.rejected') : t('plan.changeRequested')}:</b> {lastDecision.comment}</span>
+          <span><b>{t('plan.sentBack')}:</b> {lastDecision.comment}</span>
         </p>
       )}
 
