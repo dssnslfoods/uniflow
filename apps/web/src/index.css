@@ -112,3 +112,15 @@ body {
     opacity: 0;
   }
 }
+
+@keyframes slide-in-left {
+  from {
+    transform: translateX(-24px);
+    opacity: 0;
+  }
+}
+
+/* Stop iOS from inflating text in landscape. */
+html {
+  -webkit-text-size-adjust: 100%;
+}

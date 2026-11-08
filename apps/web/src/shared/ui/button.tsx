@@ -13,8 +13,9 @@ const variants: Record<Variant, string> = {
 }
 
 const sizes: Record<Size, string> = {
-  sm: 'h-8 px-3 text-[13px] gap-1.5',
-  md: 'h-9 px-4 gap-2',
+  // On touch screens (pointer: coarse) every size grows to the 44px minimum tap target.
+  sm: 'h-8 px-3 text-[13px] gap-1.5 pointer-coarse:h-11',
+  md: 'h-9 px-4 gap-2 pointer-coarse:h-11',
   lg: 'h-12 px-6 text-base gap-2',
 }
 
@@ -29,7 +30,7 @@ export const Button = forwardRef<HTMLButtonElement, Props>(function Button(
       ref={ref}
       disabled={disabled || loading}
       className={cn(
-        'inline-flex items-center justify-center rounded-lg font-medium transition-[background,opacity] duration-150',
+        'inline-flex shrink-0 items-center justify-center whitespace-nowrap rounded-lg font-medium transition-[background,opacity] duration-150',
         'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand disabled:opacity-50 disabled:pointer-events-none',
         variants[variant],
         sizes[size],

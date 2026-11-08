@@ -9,7 +9,8 @@ import {
 import { cn } from '@/lib/utils'
 
 const control =
-  'h-9 w-full rounded-lg border border-border bg-surface px-3 text-fg placeholder:text-muted ' +
+  // 16px text on touch screens stops iOS Safari zooming into the field on focus.
+  'h-9 w-full rounded-lg border border-border bg-surface px-3 text-fg placeholder:text-muted pointer-coarse:h-11 pointer-coarse:text-base ' +
   'focus:outline-none focus:ring-2 focus:ring-brand/40 focus:border-brand transition-shadow'
 
 export const Input = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputElement>>(function Input(
@@ -30,7 +31,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaHTMLAttributes<H
   { className, ...props },
   ref,
 ) {
-  return <textarea ref={ref} className={cn(control, 'h-auto min-h-20 py-2', className)} {...props} />
+  return <textarea ref={ref} className={cn(control, 'h-auto min-h-20 py-2 pointer-coarse:h-auto', className)} {...props} />
 })
 
 type FieldProps = { label: string; hint?: string; children: (id: string) => ReactNode; className?: string }

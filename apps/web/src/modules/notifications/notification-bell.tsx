@@ -85,7 +85,7 @@ export function NotificationBell() {
         aria-label={t('notifications.title')}
         aria-expanded={open}
         onClick={() => setOpen((o) => !o)}
-        className="relative grid size-9 place-items-center rounded-lg text-muted hover:bg-surface-2 hover:text-fg"
+        className="relative grid size-9 place-items-center rounded-lg text-muted hover:bg-surface-2 hover:text-fg pointer-coarse:size-11"
       >
         <Bell className="size-5" />
         {unread > 0 && (
@@ -94,21 +94,22 @@ export function NotificationBell() {
           </span>
         )}
       </button>
+      {/* Below lg the bell sits at the right of the top bar, so the panel pins to the viewport edges instead. */}
       {open && (
-        <div className="absolute left-0 top-11 z-50 w-80 overflow-hidden rounded-xl border border-border bg-surface shadow-xl md:left-auto md:right-auto">
+        <div className="fixed inset-x-2 top-[calc(3.75rem+env(safe-area-inset-top))] z-50 overflow-hidden rounded-xl border border-border bg-surface shadow-xl sm:left-auto sm:right-4 sm:w-80 lg:absolute lg:inset-x-auto lg:left-0 lg:top-11">
           <header className="flex items-center justify-between border-b border-border px-4 py-2.5">
             <h2 className="font-semibold">{t('notifications.title')}</h2>
             {unread > 0 && (
               <button className="text-xs text-brand hover:underline" onClick={() => markRead.mutate(null)}>{t('notifications.markAll')}</button>
             )}
           </header>
-          <ul className="max-h-96 overflow-y-auto">
+          <ul className="max-h-[min(24rem,70vh)] overflow-y-auto">
             {(list.data ?? []).length === 0 && <li className="px-4 py-6 text-center text-sm text-muted">{t('notifications.empty')}</li>}
             {(list.data ?? []).map((n) => (
               <li key={n.id}>
                 <button
                   onClick={() => openItem(n)}
-                  className={cn('flex w-full gap-2 border-b border-border px-4 py-2.5 text-left text-sm last:border-0 hover:bg-surface-2', !n.read_at && 'bg-brand/5')}
+                  className={cn('flex w-full gap-2 border-b border-border px-4 py-2.5 pointer-coarse:py-3 text-left text-sm last:border-0 hover:bg-surface-2', !n.read_at && 'bg-brand/5')}
                 >
                   {!n.read_at && <span className="mt-1.5 size-2 shrink-0 rounded-full bg-brand" aria-hidden />}
                   <span className="min-w-0 flex-1">{text(n)}</span>
