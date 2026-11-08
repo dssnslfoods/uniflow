@@ -17,7 +17,7 @@ export const contentTh: ManualText = {
           { term: 'ปล่อยเข้าผลิต', desc: 'เปลี่ยน Job ที่อนุมัติแล้วให้เข้าคิวเครื่องจริง การ์ดงานจึงจะขึ้นบอร์ดและหน้างาน' },
         ],
       },
-      { tip: 'เมนู [[nav.proofs]] [[nav.outsource]] [[nav.deliveries]] และ [[nav.inventory]] เป็นโมดูลเสริม จะแสดงเฉพาะเมื่อเปิดให้โรงพิมพ์ของคุณแล้ว ถ้าไม่เห็นเมนูเหล่านี้ คู่มือส่วนนั้นจะถูกซ่อนด้วย' },
+      { tip: 'เมนู [[nav.outsource]] [[nav.deliveries]] และ [[nav.inventory]] เป็นโมดูลเสริม จะแสดงเฉพาะเมื่อเปิดให้โรงพิมพ์ของคุณแล้ว ถ้าไม่เห็นเมนูเหล่านี้ คู่มือส่วนนั้นจะถูกซ่อนด้วย' },
     ],
   },
   roles: {
@@ -45,8 +45,6 @@ export const contentTh: ManualText = {
           { label: 'ปล่อยงานทั้งที่วัตถุดิบไม่พอ', roles: ['manager'] },
           { label: 'เริ่ม พัก จบงาน แจ้งเครื่องหยุด', roles: ['admin', 'manager', 'supervisor', 'staff'] },
           { label: 'เพิ่มขั้นตอนแก้งาน แก้ Flow', roles: ['admin', 'manager', 'supervisor'] },
-          { label: 'อัปโหลด Proof', roles: ['admin', 'manager', 'supervisor', 'staff'] },
-          { label: 'บันทึกคำตอบลูกค้าเรื่อง Proof', roles: ['admin', 'manager', 'supervisor'] },
           { label: 'ส่งงาน รับคืน QC งานจ้างนอก', roles: ['admin', 'manager', 'supervisor'] },
           { label: 'รับวัตถุดิบเข้าคลัง', roles: ['admin', 'manager', 'supervisor'] },
           { label: 'เบิก / คืนวัตถุดิบของ Job', roles: ['admin', 'manager', 'supervisor', 'staff'] },
@@ -250,22 +248,6 @@ export const contentTh: ManualText = {
       { warn: 'ระหว่างรออนุมัติ Flow ใหม่ ขั้นตอนที่กำลังทำทำต่อได้ แต่ขั้นตอนใหม่ยังเริ่มไม่ได้ ถ้า Flow ถูกตีกลับ Job จะเป็น [[jobStatus.on_hold]] จนกว่าจะแก้และส่งใหม่' },
     ],
   },
-  proofs: {
-    title: 'Artwork / Proof',
-    summary: 'เก็บแบบทุกเวอร์ชัน บันทึกคำตอบลูกค้า และกันไม่ให้ผลิตก่อนลูกค้าอนุมัติ',
-    blocks: [
-      {
-        steps: [
-          'เปิดหน้า Job ในส่วน [[proof.title]] เลือกไฟล์ Proof (PDF หรือรูป) ใส่หมายเหตุ แล้วกดส่ง',
-          'ส่งไฟล์ให้ลูกค้าตรวจตามช่องทางปกติของร้าน ลูกค้าไม่ต้องเข้าระบบ',
-          'เมื่อลูกค้าตอบ ใส่ชื่อผู้อนุมัติแล้วกด [[proof.approve]] หรือกด [[proof.reject]] พร้อมความเห็นของลูกค้า',
-          'ถ้าลูกค้าขอแก้ อัปโหลดไฟล์เวอร์ชันถัดไปที่หน้า Job เดิม เวอร์ชันเก่าจะถูกแทนที่แต่ยังดูย้อนหลังได้',
-        ],
-      },
-      { p: 'หน้า [[nav.proofs]] รวมงานที่รอลูกค้าตอบและงานที่ลูกค้าขอแก้ ใช้ติดตามงานค้างในแต่ละวัน' },
-      { warn: 'ถ้าเปิด [[settings.proofGate]] ไว้ ขั้นตอนออกแบบจะกดเสร็จไม่ได้จนกว่าจะบันทึกว่าลูกค้าอนุมัติแล้ว จึงต้องบันทึกคำตอบในระบบทุกครั้ง' },
-    ],
-  },
   outsource: {
     title: 'งานจ้างข้างนอก',
     summary: 'ติดตามงานที่ส่งให้ Vendor ตั้งแต่ส่งออกจนรับกลับและตรวจ QC',
@@ -354,8 +336,8 @@ export const contentTh: ManualText = {
     blocks: [
       {
         defs: [
-          { term: '[[role.manager]]', desc: 'แผนรออนุมัติ แผนค้างนาน งานผลิตครบ งานเสี่ยงล่าช้า เครื่องหยุด Proof และวัตถุดิบไม่พอ' },
-          { term: '[[role.supervisor]]', desc: 'งานเสี่ยงล่าช้า เครื่องหยุด Proof และวัตถุดิบไม่พอ' },
+          { term: '[[role.manager]]', desc: 'แผนรออนุมัติ แผนค้างนาน งานผลิตครบ งานเสี่ยงล่าช้า เครื่องหยุด และวัตถุดิบไม่พอ' },
+          { term: '[[role.supervisor]]', desc: 'งานเสี่ยงล่าช้า เครื่องหยุด และวัตถุดิบไม่พอ' },
           { term: 'ผู้ส่งแผน', desc: 'แผนได้รับอนุมัติ ถูกตีกลับ หรือถูกขอให้แก้' },
           { term: '[[role.executive]]', desc: 'งานผลิตครบพร้อมส่ง' },
         ],
@@ -375,7 +357,7 @@ export const contentTh: ManualText = {
       },
       {
         defs: [
-          { term: '[[stepType.design]]', desc: 'งานออกแบบ เชื่อมกับการอนุมัติ Proof' },
+          { term: '[[stepType.design]]', desc: 'งานออกแบบ / จัดหน้า' },
           { term: '[[stepType.internal]]', desc: 'ทำบนเครื่องในโรงงาน' },
           { term: '[[stepType.qc]] / [[stepType.delivery]]', desc: 'ขั้นตรวจงานหรือจัดส่งภายใน ถ้าไม่ผูกเครื่องจะบันทึกที่ [[floor.noMachine]]' },
         ],
@@ -434,7 +416,6 @@ export const contentTh: ManualText = {
         bullets: [
           '[[settings.selfApproval]]: สำหรับร้านที่มีผู้จัดการคนเดียว',
           '[[settings.stockGate]]: ถ้าของไม่พอจะปล่อยงานไม่ได้',
-          '[[settings.proofGate]]: ขั้นออกแบบจบไม่ได้จนกว่าลูกค้าอนุมัติ',
         ],
       },
       { h: '[[settings.tabs.members]]' },
@@ -521,7 +502,6 @@ export const contentTh: ManualText = {
           { term: '[[errors.step.not_your_machine]]', desc: 'ขอหัวหน้างานเพิ่มคุณเป็นคนประจำเครื่องนี้' },
           { term: '[[errors.step.job_reapproval]]', desc: 'รอผู้จัดการอนุมัติ Flow ใหม่ก่อน' },
           { term: '[[board.cannotDrop]]', desc: 'เพิ่มขั้นตอนนี้ให้เครื่องที่หน้า [[nav.machines]] หรือเลือกเครื่องอื่น' },
-          { term: '[[errors.proof.not_approved]]', desc: 'บันทึกคำตอบลูกค้าที่หน้า Job ก่อน' },
           { term: '[[errors.release.stock_short]]', desc: 'รับของเข้าคลัง หรือให้ [[role.manager]] ใส่เหตุผลเพื่อปล่อยงาน' },
           { term: '[[errors.step.conflict]]', desc: 'มีคนแก้พร้อมกัน ดูข้อมูลล่าสุดแล้วทำใหม่' },
         ],

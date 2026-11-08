@@ -17,7 +17,7 @@ export const contentEn: ManualText = {
           { term: 'Release', desc: 'Puts an approved job into the real machine queue. Only then does it appear on the board and the shop floor.' },
         ],
       },
-      { tip: '[[nav.proofs]], [[nav.outsource]], [[nav.deliveries]] and [[nav.inventory]] are optional modules. They appear only when enabled for your shop; if you do not see them, their parts of this manual are hidden too.' },
+      { tip: '[[nav.outsource]], [[nav.deliveries]] and [[nav.inventory]] are optional modules. They appear only when enabled for your shop; if you do not see them, their parts of this manual are hidden too.' },
     ],
   },
   roles: {
@@ -45,8 +45,6 @@ export const contentEn: ManualText = {
           { label: 'Release a job with short stock', roles: ['manager'] },
           { label: 'Start, pause, finish work, report downtime', roles: ['admin', 'manager', 'supervisor', 'staff'] },
           { label: 'Add rework steps, edit a flow', roles: ['admin', 'manager', 'supervisor'] },
-          { label: 'Upload proofs', roles: ['admin', 'manager', 'supervisor', 'staff'] },
-          { label: "Record the customer's proof decision", roles: ['admin', 'manager', 'supervisor'] },
           { label: 'Send, receive and QC outsourced work', roles: ['admin', 'manager', 'supervisor'] },
           { label: 'Receive stock', roles: ['admin', 'manager', 'supervisor'] },
           { label: 'Issue / return materials for a job', roles: ['admin', 'manager', 'supervisor', 'staff'] },
@@ -250,22 +248,6 @@ export const contentEn: ManualText = {
       { warn: 'While a new flow waits for approval, running steps can continue but new steps cannot start. If the flow is rejected the job becomes [[jobStatus.on_hold]] until it is fixed and resubmitted.' },
     ],
   },
-  proofs: {
-    title: 'Artwork / Proof',
-    summary: "Keep every version, record the customer's decision, and block production until it is approved.",
-    blocks: [
-      {
-        steps: [
-          'On the job page under [[proof.title]], choose the proof file (PDF or image), add a note and send it.',
-          'Send the file to the customer your usual way. Customers do not sign in.',
-          'When they reply, enter the approver\'s name and press [[proof.approve]], or press [[proof.reject]] with their comment.',
-          'If changes are requested, upload the next version on the same job page. The old version is superseded but stays viewable.',
-        ],
-      },
-      { p: '[[nav.proofs]] collects proofs waiting for the customer and those needing changes, so you can follow up each day.' },
-      { warn: 'With [[settings.proofGate]] on, a design step cannot be finished until the customer\'s approval is recorded, so always record the answer in the system.' },
-    ],
-  },
   outsource: {
     title: 'Outsourced work',
     summary: 'Track work sent to vendors from dispatch to return and QC.',
@@ -354,8 +336,8 @@ export const contentEn: ManualText = {
     blocks: [
       {
         defs: [
-          { term: '[[role.manager]]', desc: 'Plans to approve, overdue approvals, finished jobs, jobs at risk, machine stops, proofs and short stock.' },
-          { term: '[[role.supervisor]]', desc: 'Jobs at risk, machine stops, proofs and short stock.' },
+          { term: '[[role.manager]]', desc: 'Plans to approve, overdue approvals, finished jobs, jobs at risk, machine stops and short stock.' },
+          { term: '[[role.supervisor]]', desc: 'Jobs at risk, machine stops and short stock.' },
           { term: 'Plan submitter', desc: 'Plan approved, rejected or changes requested.' },
           { term: '[[role.executive]]', desc: 'Jobs finished and ready to deliver.' },
         ],
@@ -375,7 +357,7 @@ export const contentEn: ManualText = {
       },
       {
         defs: [
-          { term: '[[stepType.design]]', desc: 'Design work, linked to proof approval.' },
+          { term: '[[stepType.design]]', desc: 'Design and layout work.' },
           { term: '[[stepType.internal]]', desc: 'Runs on a machine in your shop.' },
           { term: '[[stepType.qc]] / [[stepType.delivery]]', desc: 'In-house checks or dispatch. With no machine linked they are recorded under [[floor.noMachine]].' },
         ],
@@ -434,7 +416,6 @@ export const contentEn: ManualText = {
         bullets: [
           '[[settings.selfApproval]]: for shops with a single manager.',
           '[[settings.stockGate]]: jobs with short stock cannot be released.',
-          '[[settings.proofGate]]: a design step cannot finish until the customer approves.',
         ],
       },
       { h: '[[settings.tabs.members]]' },
@@ -521,7 +502,6 @@ export const contentEn: ManualText = {
           { term: '[[errors.step.not_your_machine]]', desc: 'Ask a supervisor to add you to this machine.' },
           { term: '[[errors.step.job_reapproval]]', desc: 'Wait for the manager to approve the new flow.' },
           { term: '[[board.cannotDrop]]', desc: 'Add this process to the machine on [[nav.machines]], or choose another machine.' },
-          { term: '[[errors.proof.not_approved]]', desc: "Record the customer's answer on the job page first." },
           { term: '[[errors.release.stock_short]]', desc: 'Receive stock, or have a [[role.manager]] enter a reason to release.' },
           { term: '[[errors.step.conflict]]', desc: 'Someone changed it at the same time. Check the latest data and try again.' },
         ],

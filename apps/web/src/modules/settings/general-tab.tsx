@@ -111,17 +111,6 @@ function GeneralForm({ name: initialName, plan, settings }: { name: string; plan
         </label>
       )}
 
-      {modules.has('proof') && (
-        <label className="flex items-start gap-3 rounded-lg border border-border p-3">
-          <input type="checkbox" className="mt-1 accent-[var(--brand)]" checked={!!form.features?.proof_gate} disabled={!canEdit}
-            onChange={(e) => setForm((f) => ({ ...f, features: { ...f.features, proof_gate: e.target.checked } }))} />
-          <span>
-            <span className="block font-medium">{t('settings.proofGate')}</span>
-            <span className="text-xs text-muted">{t('settings.proofGateHint')}</span>
-          </span>
-        </label>
-      )}
-
       {save.error && <ErrorNote>{errorMessage(save.error)}</ErrorNote>}
       {canEdit && (
         <div className="flex justify-end">

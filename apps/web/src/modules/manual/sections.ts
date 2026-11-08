@@ -21,7 +21,7 @@ type Meta = {
   roles: Role[] | 'all'
   module?: ModuleKey
   platformOnly?: boolean
-  to?: '/dashboard' | '/board' | '/floor' | '/proofs' | '/outsource' | '/deliveries' | '/inventory' | '/orders' | '/approvals'
+  to?: '/dashboard' | '/board' | '/floor' | '/outsource' | '/deliveries' | '/inventory' | '/orders' | '/approvals'
     | '/customers' | '/machines' | '/processes' | '/templates' | '/settings' | '/admin'
 }
 
@@ -41,7 +41,6 @@ export const sections = [
   { id: 'board', group: 'daily', roles: planners, to: '/board' },
   { id: 'floor', group: 'daily', roles: makers, to: '/floor' },
   { id: 'job', group: 'daily', roles: makers, to: '/board' },
-  { id: 'proofs', group: 'daily', roles: makers, module: 'proof', to: '/proofs' },
   { id: 'outsource', group: 'daily', roles: planners, module: 'outsource', to: '/outsource' },
   { id: 'inventory', group: 'daily', roles: makers, module: 'inventory', to: '/inventory' },
   { id: 'deliveries', group: 'daily', roles: planners, module: 'delivery', to: '/deliveries' },

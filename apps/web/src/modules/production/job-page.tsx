@@ -20,7 +20,6 @@ import { useAddRework, useProfileNames, formatMinutes, runMinutes, useJobDetail,
 import { JobImages } from './job-images'
 import { StepNote } from './step-note'
 import { JobMaterialsIssue } from '../inventory/job-materials'
-import { ProofPanel } from '../proof/proof-panel'
 import { JobStatusPill } from './job-status'
 
 const fmtTime = (iso: string | null) =>
@@ -153,7 +152,6 @@ export function JobPage({ jobId }: { jobId: string }) {
             ))}
           </div>
         </section>
-        <ProofPanel jobId={job.id} active={!['completed', 'cancelled'].includes(job.status)} />
         <JobMaterialsIssue jobId={job.id} active={['approved', 'in_production', 'pending_approval', 'on_hold', 'ready_to_deliver'].includes(job.status)} />
         </div>
 

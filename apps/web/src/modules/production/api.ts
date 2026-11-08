@@ -130,11 +130,10 @@ function useInvalidatePlan() {
   const vendorKey = useTenantKey('vendor-performance')
   const deliveriesKey = useTenantKey('deliveries')
   const stockKey = useTenantKey('stock')
-  const proofsKey = useTenantKey('proofs')
   const floorSpecKey = useTenantKey('floor-spec')
   return () =>
     Promise.all(
-      [jobsKey, coverageKey, approvalsKey, ordersKey, boardKey, loadKey, downKey, jobKey, outsourceKey, vendorKey, deliveriesKey, stockKey, proofsKey, floorSpecKey].map((queryKey) =>
+      [jobsKey, coverageKey, approvalsKey, ordersKey, boardKey, loadKey, downKey, jobKey, outsourceKey, vendorKey, deliveriesKey, stockKey, floorSpecKey].map((queryKey) =>
         qc.invalidateQueries({ queryKey }),
       ),
     )
