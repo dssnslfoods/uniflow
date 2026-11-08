@@ -21,6 +21,7 @@ import { JobImages } from './job-images'
 import { StepNote } from './step-note'
 import { JobMaterialsIssue } from '../inventory/job-materials'
 import { JobStatusPill } from './job-status'
+import { DocFlow } from './doc-flow'
 
 const fmtTime = (iso: string | null) =>
   iso ? new Intl.DateTimeFormat(appLocale(), { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }).format(new Date(iso)) : '—'
@@ -96,6 +97,8 @@ export function JobPage({ jobId }: { jobId: string }) {
         <Kpi label={t('job.plannedFinish', { d: '' }).trim()} value={fmtTime(job.planned_finish_at)} />
         <Kpi label={t('job.progress', { p: progress })} value={`${done}/${job.steps.length}`} bar={progress} />
       </dl>
+
+      <DocFlow job={job} logs={logs} />
 
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_320px]">
         <div className="flex min-w-0 flex-col gap-5">

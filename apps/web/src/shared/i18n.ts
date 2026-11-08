@@ -230,6 +230,16 @@ const th = {
     closed: 'ปิดแล้ว',
     cancelled: 'ยกเลิก',
   },
+  docFlow: {
+    title: 'เส้นทางเอกสาร',
+    planning: 'กำลังวางแผน',
+    waiting: 'รออนุมัติ',
+    reapproval: 'รออนุมัติ Flow ใหม่',
+    steps: '{{done}}/{{total}} ขั้นตอน',
+    outsideNotSent: 'มีงานจ้างข้างนอก ยังไม่ส่ง',
+    delivered: 'ส่งแล้ว {{n}} / {{of}}',
+    node: { po: 'PO ลูกค้า', job: 'สร้าง Job', approval: 'อนุมัติแผน', release: 'ปล่อยเข้าผลิต', production: 'ผลิต', delivery: 'ส่งของ', done: 'เสร็จสิ้น', cancelled: 'ยกเลิก' },
+  },
   plan: {
     state: { pending: 'แผนรออนุมัติ ({{n}} Job)', planning: 'กำลังวางแผน ({{n}} Job)', approved: 'แผนอนุมัติแล้ว รอปล่อยเข้าผลิต ({{n}} Job)' },
     outsource: 'ส่งให้ข้างนอกทำ',
@@ -1217,6 +1227,16 @@ const en: typeof th = {
     delivered: 'Delivered',
     closed: 'Closed',
     cancelled: 'Cancelled',
+  },
+  docFlow: {
+    title: 'Document flow',
+    planning: 'Planning',
+    waiting: 'Awaiting approval',
+    reapproval: 'New flow awaiting approval',
+    steps: '{{done}}/{{total}} steps',
+    outsideNotSent: 'Outside work not sent yet',
+    delivered: 'Delivered {{n}} / {{of}}',
+    node: { po: 'Customer PO', job: 'Job created', approval: 'Plan approved', release: 'Released', production: 'Production', delivery: 'Delivery', done: 'Completed', cancelled: 'Cancelled' },
   },
   plan: {
     state: { pending: 'Plan awaiting approval ({{n}} job)', planning: 'Planning ({{n}} job)', approved: 'Plan approved, not released ({{n}} job)' },
