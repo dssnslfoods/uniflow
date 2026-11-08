@@ -11,10 +11,6 @@ if (!url || !anonKey) {
 // on start, so note it first. The app then asks the person to choose a password.
 let pendingPassword = /type=(invite|recovery)/.test(window.location.hash)
 export const needsPassword = () => pendingPassword
-// A recovery code confirmed in the app: the person must choose a new password next.
-export const requirePassword = () => {
-  pendingPassword = true
-}
 export const passwordChosen = () => {
   pendingPassword = false
 }
