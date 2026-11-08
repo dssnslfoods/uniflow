@@ -134,7 +134,7 @@ export function PlanPage({ orderId }: { orderId: string }) {
   return (
     <div className="mx-auto max-w-[1400px] pb-20">
       <div className="mb-5 flex flex-wrap items-center gap-3">
-        <Link to="/orders/$orderId" params={{ orderId }} className="rounded-lg p-1.5 text-muted hover:bg-surface-2 hover:text-fg" aria-label={t('common.back')}>
+        <Link to="/orders/$orderId" params={{ orderId }} className="rounded-lg p-1.5 text-muted hover:bg-surface-2 hover:text-fg pointer-coarse:p-3" aria-label={t('common.back')}>
           <ArrowLeft className="size-5" />
         </Link>
         <div>
@@ -188,8 +188,8 @@ export function PlanPage({ orderId }: { orderId: string }) {
       </div>
 
       {canPlan && planning.length > 0 && (
-        <div className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-surface/95 backdrop-blur md:left-60">
-          <div className="mx-auto flex max-w-[1400px] items-center justify-end gap-3 px-4 py-3 md:px-8">
+        <div className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-surface/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:left-60">
+          <div className="mx-auto flex max-w-[1400px] flex-wrap items-center justify-end gap-3 px-4 py-3 sm:px-6 lg:px-8">
             {blocker && (
               <span className="flex items-center gap-1.5 text-sm text-status-paused">
                 <AlertTriangle className="size-4" aria-hidden />
@@ -494,7 +494,7 @@ function JobCard({ job, lines, approvals, canPlan, onDirty }: CardProps) {
 
   return (
     <article className={cn('rounded-[var(--radius-card)] border bg-surface', dirty ? 'border-brand/60' : 'border-border')}>
-      <header className="flex flex-wrap items-center gap-3 border-b border-border px-5 py-3">
+      <header className="flex flex-wrap items-center gap-3 border-b border-border px-4 py-3 sm:px-5">
         <JobLink jobId={job.id} title={`${job.job_no} · ${job.title}`} className="text-xs font-medium text-muted hover:text-brand">{job.job_no}</JobLink>
         {editable ? (
           <Input aria-label={t('plan.jobTitle')} value={title} onChange={(e) => { setTitle(e.target.value); touch() }} className="h-8 max-w-sm flex-1 font-semibold" />
@@ -513,13 +513,13 @@ function JobCard({ job, lines, approvals, canPlan, onDirty }: CardProps) {
       </header>
 
       {sentBack && (
-        <p className="flex items-start gap-2 border-b border-border bg-status-risk/5 px-5 py-2.5 text-sm text-status-risk">
+        <p className="flex items-start gap-2 border-b border-border bg-status-risk/5 px-4 py-2.5 sm:px-5 text-sm text-status-risk">
           <AlertTriangle className="mt-0.5 size-4 shrink-0" aria-hidden />
           <span><b>{t('plan.sentBack')}:</b> {lastDecision.comment}</span>
         </p>
       )}
 
-      <div className="flex flex-wrap items-center gap-2 border-b border-border px-5 py-3">
+      <div className="flex flex-wrap items-center gap-2 border-b border-border px-4 py-3 sm:px-5">
         {jobLines.map((l) => {
           const line = lineById.get(l.sales_order_item_id)
           return (
@@ -533,7 +533,7 @@ function JobCard({ job, lines, approvals, canPlan, onDirty }: CardProps) {
                     value={l.qty || ''}
                     onChange={(e) => { setJobLines((ls) => ls.map((x) => (x === l ? { ...x, qty: Number(e.target.value || 0) } : x))); touch() }}
                   />
-                  <button type="button" aria-label={t('common.delete')} className="rounded-full p-0.5 text-muted hover:text-status-risk"
+                  <button type="button" aria-label={t('common.delete')} className="rounded-full p-0.5 text-muted hover:text-status-risk pointer-coarse:p-2"
                     onClick={() => { setJobLines((ls) => ls.filter((x) => x !== l)); touch() }}>
                     <X className="size-3.5" />
                   </button>
@@ -562,7 +562,7 @@ function JobCard({ job, lines, approvals, canPlan, onDirty }: CardProps) {
         )}
       </div>
 
-      <div className="px-5 py-4">
+      <div className="px-4 py-4 sm:px-5">
         <div className="mb-2 flex items-center justify-between">
           <h4 className="text-[13px] font-medium">{t('plan.flow')}</h4>
           {totalMinutes > 0 && <span className="tabular text-xs text-muted">{t('plan.totalTime', { t: formatMinutes(t, totalMinutes) })}</span>}
@@ -577,7 +577,7 @@ function JobCard({ job, lines, approvals, canPlan, onDirty }: CardProps) {
             const rowEditable = stepsEditable && !isLocked(r)
             return (
               <li key={r.key} className={cn('flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg border border-border px-3 py-2', r.parallel && 'ml-6 border-dashed', flowEdit && isLocked(r) && 'bg-surface-2/60')}>
-                <span className="tabular w-14 shrink-0 text-xs font-medium text-muted">
+                <span className="tabular w-10 shrink-0 text-xs font-medium text-muted sm:w-14">
                   {r.parallel ? <GitFork className="inline size-3.5" aria-label={t('templates.parallel')} /> : t('templates.level', { n: r.seq })}
                 </span>
                 <span className={cn('grid size-7 shrink-0 place-items-center rounded-md', style.cls)}>
@@ -643,7 +643,7 @@ function JobCard({ job, lines, approvals, canPlan, onDirty }: CardProps) {
                 )}
 
                 {r.id && (
-                  <StepNote stepId={r.id} note={r.note} canEdit={canNote} className="basis-full pl-[4.25rem]"
+                  <StepNote stepId={r.id} note={r.note} canEdit={canNote} className="basis-full sm:pl-[4.25rem]"
                     onSaved={(note) => setRows((rs) => rs.map((x) => (x.key === r.key ? { ...x, note } : x)))} />
                 )}
               </li>
@@ -668,7 +668,7 @@ function JobCard({ job, lines, approvals, canPlan, onDirty }: CardProps) {
         )}
       </div>
 
-      <div className="border-t border-border px-5 py-4">
+      <div className="border-t border-border px-4 py-4 sm:px-5">
         <h4 className="mb-2 text-[13px] font-medium">{t('jobImages.title')}</h4>
         <JobImages jobId={job.id} open={canNote} />
       </div>
@@ -676,7 +676,7 @@ function JobCard({ job, lines, approvals, canPlan, onDirty }: CardProps) {
       <JobMaterialsEditor jobId={job.id} editable={canPlan && job.status !== 'completed'} sheetHint={sheetHint} />
 
       {flowEdit && (
-        <footer className="flex flex-wrap items-center justify-between gap-2 border-t border-border bg-status-paused/5 px-5 py-3">
+        <footer className="flex flex-wrap items-center justify-between gap-2 border-t border-border bg-status-paused/5 px-4 py-3 sm:px-5">
           <span className="text-xs text-status-paused">{t('plan.reflowHint')}</span>
           <div className="flex items-center gap-2">
             <Button variant="ghost" size="sm" onClick={() => { setRows(toRows(job.steps)); setFlowEdit(false); setDirtyLocal(false) }}>
@@ -691,7 +691,7 @@ function JobCard({ job, lines, approvals, canPlan, onDirty }: CardProps) {
       )}
 
       {editable && (
-        <footer className="flex items-center justify-between gap-2 border-t border-border px-5 py-3">
+        <footer className="flex items-center justify-between gap-2 border-t border-border px-4 py-3 sm:px-5">
           <Button variant="ghost" size="sm" onClick={onCancel}>{t('plan.cancelJob')}</Button>
           <div className="flex items-center gap-3">
             {dirty && <span className="text-xs text-brand">{t('plan.unsaved')}</span>}
@@ -718,7 +718,7 @@ function OutsourceBox({ row, editable, vendors, vendorName, onToggle, onChange }
   const { t } = useTranslation()
   if (!editable) {
     return (
-      <div className="basis-full pl-[4.25rem] text-xs">
+      <div className="basis-full sm:pl-[4.25rem] text-xs">
         <span className="inline-flex items-center gap-1 rounded-full bg-status-paused/10 px-2 py-0.5 font-medium text-status-paused">
           <Truck className="size-3.5" aria-hidden />
           {t('plan.outsourcedTo', { vendor: vendorName ?? '—' })}
@@ -728,7 +728,7 @@ function OutsourceBox({ row, editable, vendors, vendorName, onToggle, onChange }
     )
   }
   return (
-    <div className={cn('basis-full pl-[4.25rem]', row.outsourced && 'flex flex-col gap-2')}>
+    <div className={cn('basis-full sm:pl-[4.25rem]', row.outsourced && 'flex flex-col gap-2')}>
       <label className="inline-flex cursor-pointer items-center gap-2 text-xs">
         <input type="checkbox" className="accent-[var(--brand)]" checked={row.outsourced} onChange={(e) => onToggle(e.target.checked)} />
         <Truck className="size-3.5 text-muted" aria-hidden />
@@ -774,7 +774,7 @@ function NumBox({ label, value, disabled, width, onChange }: { label: string; va
 
 function IconBtn({ label, children, ...props }: ButtonHTMLAttributes<HTMLButtonElement> & { label: string }) {
   return (
-    <button type="button" aria-label={label} title={label} className="rounded-md p-1 text-muted hover:bg-surface-2 hover:text-fg disabled:opacity-30" {...props}>
+    <button type="button" aria-label={label} title={label} className="rounded-md p-1 text-muted hover:bg-surface-2 hover:text-fg disabled:opacity-30 pointer-coarse:p-2.5" {...props}>
       {children}
     </button>
   )

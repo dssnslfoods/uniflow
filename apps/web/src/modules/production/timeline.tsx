@@ -61,15 +61,16 @@ export function Timeline({
       <div className="mb-2 flex justify-end gap-1">
         {[3, 7, 14].map((d) => (
           <button key={d} onClick={() => setDays(d)}
-            className={cn('rounded-lg px-3 py-1 text-sm', days === d ? 'bg-surface font-medium shadow-sm ring-1 ring-border' : 'text-muted hover:bg-surface-2')}>
+            className={cn('rounded-lg px-3 py-1 text-sm pointer-coarse:py-2.5', days === d ? 'bg-surface font-medium shadow-sm ring-1 ring-border' : 'text-muted hover:bg-surface-2')}>
             {t('board.days', { n: d })}
           </button>
         ))}
       </div>
       <div className="min-h-0 flex-1 overflow-auto rounded-[var(--radius-card)] border border-border bg-surface">
         <div className="min-w-[900px]">
-          <div className="sticky top-0 z-10 grid grid-cols-[180px_1fr] border-b border-border bg-surface-2 text-xs text-muted">
-            <div className="px-3 py-2" />
+          <div className="sticky top-0 z-10 grid grid-cols-[112px_1fr] border-b sm:grid-cols-[180px_1fr] border-border bg-surface-2 text-xs text-muted">
+            {/* Machine names stay pinned while the time axis scrolls sideways. */}
+            <div className="sticky left-0 z-[4] bg-surface-2 px-3 py-2" />
             <div className="relative h-8">
               {ticks.map((d) => (
                 <span key={d} className="absolute top-0 flex h-full items-center border-l border-border pl-2" style={{ left: `${pct(d)}%` }}>
@@ -79,8 +80,8 @@ export function Timeline({
             </div>
           </div>
           {rows.map((row) => (
-            <div key={row.id} className="grid grid-cols-[180px_1fr] border-b border-border last:border-0">
-              <div className={cn('truncate px-3 py-3 text-sm font-medium', row.down && 'text-status-risk')}>
+            <div key={row.id} className="grid grid-cols-[112px_1fr] border-b border-border last:border-0 sm:grid-cols-[180px_1fr]">
+              <div className={cn('sticky left-0 z-[3] truncate border-r border-border bg-surface px-3 py-3 text-sm font-medium', row.down && 'text-status-risk')}>
                 {row.label}{row.down ? ' ⛔' : ''}
               </div>
               <div className="relative h-12">

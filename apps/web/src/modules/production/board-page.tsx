@@ -260,19 +260,20 @@ export function BoardPage() {
     ...(columns.manual?.length ? [{ id: 'manual' }] : []),
   ]
 
+  // Fill the screen under the mobile top bar (< lg) or beside the sidebar (lg+), so columns scroll inside.
   return (
-    <div className="flex h-[calc(100vh-3rem)] flex-col">
+    <div className="flex h-[calc(100dvh-7.5rem)] min-h-[30rem] flex-col lg:h-[calc(100dvh-3rem)]">
       <header className="mb-4 flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold">{t('board.title')}</h1>
           <p className="mt-1 text-muted">{t('board.subtitle')}</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <div className="relative">
+          <div className="relative w-full sm:w-auto">
             <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted" aria-hidden />
-            <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t('board.search')} className="w-64 pl-9" aria-label={t('board.search')} />
+            <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t('board.search')} className="w-full pl-9 sm:w-64" aria-label={t('board.search')} />
           </div>
-          <label className="flex cursor-pointer items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-2 text-sm">
+          <label className="flex min-h-9 cursor-pointer items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-2 text-sm pointer-coarse:min-h-11">
             <input type="checkbox" checked={onlyRisk} onChange={(e) => setOnlyRisk(e.target.checked)} className="accent-[var(--status-risk)]" />
             <AlertTriangle className="size-4 text-status-risk" aria-hidden />
             {t('board.onlyRisk')}
@@ -280,7 +281,7 @@ export function BoardPage() {
           <div className="flex rounded-lg border border-border bg-surface p-0.5" role="tablist">
             {(['board', 'timeline'] as const).map((v) => (
               <button key={v} role="tab" aria-selected={view === v} onClick={() => pickView(v)}
-                className={cn('rounded-md px-3 py-1.5 text-sm', view === v ? 'bg-surface-2 font-medium' : 'text-muted hover:text-fg')}>
+                className={cn('rounded-md px-3 py-1.5 text-sm pointer-coarse:py-2.5', view === v ? 'bg-surface-2 font-medium' : 'text-muted hover:text-fg')}>
                 {v === 'board' ? t('board.viewBoard') : t('board.viewTimeline')}
               </button>
             ))}
@@ -310,7 +311,7 @@ export function BoardPage() {
       )}
 
       {focusJob && (
-        <button className="mb-3 self-start rounded-full bg-brand/10 px-3 py-1 text-xs text-brand" onClick={() => setFocusJob(null)}>
+        <button className="mb-3 self-start rounded-full bg-brand/10 px-3 py-1 text-xs text-brand pointer-coarse:py-2.5" onClick={() => setFocusJob(null)}>
           {t('board.focus', { job: steps.find((s) => s.job_id === focusJob)?.job.job_no })}
         </button>
       )}
@@ -328,7 +329,7 @@ export function BoardPage() {
         />
       ) : (
         <DndContext sensors={sensors} collisionDetection={closestCorners} onDragStart={onDragStart} onDragOver={onDragOver} onDragEnd={onDragEnd} onDragCancel={() => { setActiveId(null); setColumns(serverColumns) }}>
-          <div className="-mx-4 flex min-h-0 flex-1 gap-3 overflow-x-auto px-4 pb-4 md:-mx-8 md:px-8">
+          <div className="-mx-4 flex min-h-0 flex-1 snap-x snap-mandatory gap-3 overflow-x-auto scroll-px-4 px-4 pb-4 sm:-mx-6 sm:scroll-px-6 sm:px-6 lg:-mx-8 lg:snap-none lg:px-8">
             {columnList.map((col) => {
               const ids = columns[col.id] ?? []
               const valid = !active || canDropOn(col.id, active) || findColumn(active.id) === col.id
@@ -423,7 +424,7 @@ function Column({ id, machine, ids, valid, dragging, backlog, load, preview, act
   return (
     <section
       className={cn(
-        'flex w-72 shrink-0 flex-col rounded-[var(--radius-card)] border bg-surface-2/60 transition-opacity',
+        'flex w-[min(18rem,82vw)] shrink-0 snap-start flex-col rounded-[var(--radius-card)] border bg-surface-2/60 transition-opacity',
         dragging && !valid && 'opacity-40',
         isOver && valid ? 'border-brand ring-2 ring-brand/30' : 'border-border',
         id === 'unscheduled' && 'border-dashed',
@@ -605,11 +606,11 @@ function SuggestButton({ stepId, currentMachine, onPick, className }: { stepId: 
 
   return (
     <span data-card-menu className={cn('relative', className)} onPointerDown={(e) => e.stopPropagation()}>
-      <button type="button" aria-label={t('board.suggest')} title={t('board.suggest')} className="rounded p-0.5 hover:bg-surface-2 hover:text-brand" onClick={() => setOpen((o) => !o)}>
+      <button type="button" aria-label={t('board.suggest')} title={t('board.suggest')} className="rounded p-0.5 hover:bg-surface-2 hover:text-brand pointer-coarse:-m-2 pointer-coarse:p-2.5" onClick={() => setOpen((o) => !o)}>
         <ArrowLeftRight className="size-3.5" />
       </button>
       {open && (
-        <div className="absolute right-0 top-6 z-30 w-64 rounded-lg border border-border bg-surface p-1 text-[12px] text-fg shadow-xl">
+        <div className="absolute right-0 top-6 z-30 w-64 max-w-[80vw] rounded-lg border border-border bg-surface p-1 text-[12px] text-fg shadow-xl">
           <p className="px-2 py-1 text-[11px] font-medium text-muted">{t('board.suggest')}</p>
           {suggestions.isLoading && <p className="px-2 py-2 text-muted">…</p>}
           {suggestions.data?.length === 0 && <p className="px-2 py-2 text-muted">{t('board.noSuggestion')}</p>}

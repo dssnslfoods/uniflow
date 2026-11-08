@@ -120,7 +120,7 @@ export function FloorPage({ focusStepId }: { focusStepId?: string }) {
   if (err) return <ErrorNote>{errorMessage(err)}</ErrorNote>
 
   return (
-    <div className="mx-auto flex max-w-xl flex-col gap-4 pb-24">
+    <div className="mx-auto flex max-w-xl flex-col gap-4 pb-24 md:max-w-2xl">
       <header>
         <h1 className="text-2xl font-semibold">{t('floor.title')}</h1>
         <p className="text-muted">{t('floor.subtitle')}</p>
@@ -258,14 +258,14 @@ function StepSummary({ step, processName, big, onSpec, onOpenJob }: { step: Boar
   return (
     <div>
       <div className="flex items-center gap-2 text-sm text-muted">
-        <button type="button" onClick={onOpenJob} className="font-semibold hover:text-brand">{step.job.job_no}</button>
+        <button type="button" onClick={onOpenJob} className="-my-2 py-2 font-semibold hover:text-brand pointer-coarse:-my-3 pointer-coarse:py-3">{step.job.job_no}</button>
         <span>· {t('board.stage', { n: step.seq })}</span>
         {step.job.due_date && <span className="ml-auto">{t('board.due', { d: new Date(step.job.due_date).toLocaleDateString(appLocale(), { day: 'numeric', month: 'short' }) })}</span>}
       </div>
       <div className="flex items-start gap-2">
         <p className={cn('min-w-0 flex-1 font-semibold', big ? 'text-2xl' : 'text-xl')}>{processName}</p>
         <button type="button" onClick={onSpec}
-          className="flex shrink-0 items-center gap-1 rounded-full border border-border px-3 py-1.5 text-sm text-muted hover:bg-surface-2">
+          className="flex min-h-9 shrink-0 items-center gap-1 rounded-full border border-border px-3 py-1.5 text-sm text-muted hover:bg-surface-2 pointer-coarse:min-h-11">
           <FileText className="size-4" aria-hidden />{t('floor.spec.open')}
         </button>
       </div>
@@ -280,10 +280,10 @@ function Sheet({ title, onClose, children }: { title: string; onClose: () => voi
   return (
     <div className="fixed inset-0 z-40 flex items-end justify-center sm:items-center">
       <div className="absolute inset-0 bg-black/40" onClick={onClose} aria-hidden />
-      <section role="dialog" aria-modal="true" aria-label={title} className="relative max-h-[90dvh] w-full max-w-xl overflow-y-auto rounded-t-3xl bg-surface p-5 shadow-2xl sm:rounded-3xl">
+      <section role="dialog" aria-modal="true" aria-label={title} className="relative max-h-[90dvh] w-full max-w-xl overflow-y-auto overscroll-contain rounded-t-3xl bg-surface p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] shadow-2xl sm:rounded-3xl">
         <header className="mb-4 flex items-center justify-between">
           <h2 className="text-xl font-semibold">{title}</h2>
-          <button onClick={onClose} className="rounded-full p-2 text-muted hover:bg-surface-2" aria-label="close"><X className="size-6" /></button>
+          <button onClick={onClose} className="grid size-11 place-items-center rounded-full text-muted hover:bg-surface-2" aria-label="close"><X className="size-6" /></button>
         </header>
         {children}
       </section>

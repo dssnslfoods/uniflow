@@ -83,11 +83,11 @@ export function JobPage({ jobId, embedded = false, focusStepId }: { jobId: strin
     <div className={cn(!embedded && 'mx-auto max-w-5xl')}>
       <div className="mb-5 flex flex-wrap items-center gap-3">
         {embedded ? null : isFloorOnly(claims) ? (
-          <Link to="/floor" className="rounded-lg p-1.5 text-muted hover:bg-surface-2 hover:text-fg" aria-label={t('common.back')}>
+          <Link to="/floor" className="rounded-lg p-1.5 text-muted hover:bg-surface-2 hover:text-fg pointer-coarse:p-3" aria-label={t('common.back')}>
             <ArrowLeft className="size-5" />
           </Link>
         ) : (
-          <Link to="/orders/$orderId/plan" params={{ orderId: job.order.id }} className="rounded-lg p-1.5 text-muted hover:bg-surface-2 hover:text-fg" aria-label={t('common.back')}>
+          <Link to="/orders/$orderId/plan" params={{ orderId: job.order.id }} className="rounded-lg p-1.5 text-muted hover:bg-surface-2 hover:text-fg pointer-coarse:p-3" aria-label={t('common.back')}>
             <ArrowLeft className="size-5" />
           </Link>
         )}
