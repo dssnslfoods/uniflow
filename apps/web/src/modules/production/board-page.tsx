@@ -208,22 +208,24 @@ export function BoardPage() {
   const personLoads = useMemo(() => personWorkload(load.data ?? [], operatorsByMachine), [load.data, operatorsByMachine])
   const assignable = visibleMachines.filter((m) => m.status !== 'inactive')
 
-  function runAssign(membershipId: string, to: string | null, from: string | null) {
-    if (to === from) return
+  // One person, one machine: dropping someone on a machine moves them there; to = null takes them off.
+  function runAssign(membershipId: string, to: string | null) {
     const who = memberById.get(membershipId)
+    const from = who?.machine_ids[0] ?? null
+    if (to === from) return
     const name = who ? (who.full_name?.trim() || who.email) : ''
+    const message = !to ? t('staff.removed', { name, machine: machineName.get(from ?? '') ?? '' })
+      : from ? t('staff.moved', { name, from: machineName.get(from) ?? '', machine: machineName.get(to) ?? '' })
+        : t('staff.assigned', { name, machine: machineName.get(to) ?? '' })
     assign.mutate(
-      { membershipId, to, from },
+      { membershipId, to },
       {
-        onSuccess: () =>
-          toast({
-            tone: 'success',
-            message: to ? t('staff.assigned', { name, machine: machineName.get(to) ?? '' }) : t('staff.removed', { name, machine: machineName.get(from ?? '') ?? '' }),
-          }),
+        onSuccess: () => toast({ tone: 'success', message }),
         onError: (err) => toast({ tone: 'error', message: errorMessage(err) }),
       },
     )
   }
+
 
   // Where may the dragged card go? Capable, active machines — or back to "unscheduled".
   const canDropOn = (col: ColumnId, s: BoardStep | null) => {
@@ -273,8 +275,8 @@ export function BoardPage() {
       setActivePerson(null)
       if (!drop || !isPerson(drop)) return
       // Onto a machine: assign (or move, when dragged from another machine). Onto the strip: take off.
-      if (drop.machineId) runAssign(drag.membershipId, drop.machineId, drag.from)
-      else if (drag.from) runAssign(drag.membershipId, null, drag.from)
+      if (drop.machineId) runAssign(drag.membershipId, drop.machineId)
+      else if (drag.from) runAssign(drag.membershipId, null)
       return
     }
     const id = String(e.active.id)
@@ -409,7 +411,7 @@ export function BoardPage() {
             machines={assignable}
             canAssign={canMove}
             dragging={!!activePerson?.from}
-            onToggle={(membershipId, machineId, on) => runAssign(membershipId, on ? machineId : null, on ? null : machineId)}
+            onPick={runAssign}
           />
           <div className="-mx-4 flex min-h-0 flex-1 snap-x snap-mandatory gap-3 overflow-x-auto scroll-px-4 px-4 pb-4 sm:-mx-6 sm:scroll-px-6 sm:px-6 lg:-mx-8 lg:snap-none lg:px-8">
             {columnList.map((col) => {
@@ -434,7 +436,7 @@ export function BoardPage() {
                   operators={col.machine ? (operatorsByMachine.get(col.machine.id) ?? []).map((id) => memberById.get(id)!).filter(Boolean) : []}
                   personLoads={personLoads}
                   canAssign={canMove}
-                  onRemoveOperator={(membershipId) => col.machine && runAssign(membershipId, null, col.machine.id)}
+                  onRemoveOperator={(membershipId) => runAssign(membershipId, null)}
                   backlog={backlog}
                   load={l}
                   preview={preview}

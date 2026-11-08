@@ -13,7 +13,7 @@ import { useToast } from '@/shared/ui/toast'
 import { useMachines } from '../masters/machines/api'
 import {
   useInviteMember, useMembers, useRemoveMember, useSendPasswordReset, useSetMemberName, useSetMemberPassword,
-  useSetMemberRoles, useSetOperatorMachines, type Member,
+  useSetMemberRoles, useSetOperatorMachine, type Member,
 } from './api'
 
 const allRoles: Role[] = ['admin', 'executive', 'manager', 'supervisor', 'staff']
@@ -220,7 +220,7 @@ function MemberDrawer({ member, isAdmin, isSelf, onClose }: { member: Member; is
   const toast = useToast()
   const machines = useMachines()
   const setRolesM = useSetMemberRoles()
-  const setMachinesM = useSetOperatorMachines()
+  const setMachinesM = useSetOperatorMachine()
   const setNameM = useSetMemberName()
   const setPasswordM = useSetMemberPassword()
   const sendReset = useSendPasswordReset()
@@ -231,7 +231,7 @@ function MemberDrawer({ member, isAdmin, isSelf, onClose }: { member: Member; is
   const [newPassword, setNewPassword] = useState('')
   const [roles, setRoles] = useState<Role[]>(member.roles)
   const [active, setActive] = useState(member.is_active)
-  const [machineIds, setMachineIds] = useState<string[]>(member.machine_ids)
+  const [machineId, setMachineId] = useState<string | null>(member.machine_ids[0] ?? null)
 
   async function save() {
     try {
@@ -241,8 +241,8 @@ function MemberDrawer({ member, isAdmin, isSelf, onClose }: { member: Member; is
       if (isAdmin && (roles.join() !== member.roles.join() || active !== member.is_active)) {
         await setRolesM.mutateAsync({ id: member.membership_id, roles, active })
       }
-      if (machineIds.slice().sort().join() !== member.machine_ids.slice().sort().join()) {
-        await setMachinesM.mutateAsync({ membershipId: member.membership_id, machineIds })
+      if (machineId !== (member.machine_ids[0] ?? null)) {
+        await setMachinesM.mutateAsync({ membershipId: member.membership_id, machineId })
       }
       toast({ tone: 'success', message: t('common.saved') })
       onClose()
@@ -300,15 +300,16 @@ function MemberDrawer({ member, isAdmin, isSelf, onClose }: { member: Member; is
         <div>
           <p className="mb-1 text-[13px] font-medium">{t('settings.machines')}</p>
           <p className="mb-2 text-xs text-muted">{t('settings.machinesHint')}</p>
-          <div className="flex flex-wrap gap-1.5">
+          <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label={t('settings.machines')}>
             {(machines.data ?? []).map((m) => {
-              const on = machineIds.includes(m.id)
+              const on = machineId === m.id
               return (
                 <button
                   key={m.id}
                   type="button"
-                  aria-pressed={on}
-                  onClick={() => setMachineIds((ids) => (on ? ids.filter((x) => x !== m.id) : [...ids, m.id]))}
+                  role="radio"
+                  aria-checked={on}
+                  onClick={() => setMachineId(on ? null : m.id)}
                   className={cn(
                     'inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs',
                     on ? 'border-brand bg-brand/10 text-brand' : 'border-border text-muted hover:text-fg',
