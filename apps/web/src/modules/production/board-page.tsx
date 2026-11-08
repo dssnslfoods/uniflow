@@ -567,7 +567,7 @@ function Card({ step, processName, dimmed, lifted, onFocusJob, onOpen, onMoveTo 
         </button>
       </div>
       <div className="mt-0.5 truncate text-muted">
-        <JobLink jobId={step.job_id} title={`${step.job.job_no} · ${step.job.title}`} className="hover:text-brand hover:underline">
+        <JobLink jobId={step.job_id} stepId={step.id} title={`${step.job.job_no} · ${step.job.title}`} className="hover:text-brand hover:underline">
           {step.job.title}
         </JobLink>
         {step.job.order?.customer?.name ? ` · ${step.job.order.customer.name}` : ''}

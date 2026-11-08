@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { appLocale } from '@/shared/locale'
 import { useTranslation } from 'react-i18next'
 import { Link } from '@tanstack/react-router'
@@ -46,9 +46,16 @@ function useLookups() {
   }
 }
 
+// The step to point at when a job opens: where work is now (running, paused, failed), else next up.
+function currentStepId(steps: JobDetail['steps']) {
+  const by = (st: string[]) => steps.find((s) => st.includes(s.status))
+  return (by(['in_progress', 'paused', 'failed']) ?? by(['ready']) ?? by(['pending']))?.id ?? null
+}
+
 // Job card (FR-4.8): flow with plan vs actual, PO lines, activity log.
 // `embedded`: shown inside JobModal, so there is no back link and no page-width cap.
-export function JobPage({ jobId, embedded = false }: { jobId: string; embedded?: boolean }) {
+// `focusStepId`: the step the user came from (e.g. an outsource row); defaults to the current step.
+export function JobPage({ jobId, embedded = false, focusStepId }: { jobId: string; embedded?: boolean; focusStepId?: string }) {
   const { t } = useTranslation()
   const detail = useJobDetail(jobId)
   const { hasRole, claims } = useAuth()
@@ -57,6 +64,13 @@ export function JobPage({ jobId, embedded = false }: { jobId: string; embedded?:
   const { processName, machineName } = useLookups()
   const actorIds = useMemo(() => [...new Set((detail.data?.logs ?? []).map((l) => l.actor_id).filter(Boolean) as string[])], [detail.data])
   const names = useProfileNames(actorIds)
+  const highlightId = focusStepId ?? (detail.data ? currentStepId(detail.data.job.steps) : null)
+  const highlightRef = useRef<HTMLLIElement>(null)
+  // Bring the highlighted step into view each time a job opens.
+  const loaded = !!detail.data
+  useEffect(() => {
+    if (loaded && highlightId) highlightRef.current?.scrollIntoView({ block: 'center' })
+  }, [loaded, highlightId])
 
   if (detail.isLoading) return <ListSkeleton />
   if (detail.error) return <ErrorNote>{errorMessage(detail.error)}</ErrorNote>
@@ -111,7 +125,8 @@ export function JobPage({ jobId, embedded = false }: { jobId: string; embedded?:
               const style = stepTypeStyle[s.step_type]
               const ran = runMinutes(s)
               return (
-                <li key={s.id} className={cn('rounded-lg border px-3 py-2.5', stepTone[s.status])}>
+                <li key={s.id} ref={s.id === highlightId ? highlightRef : undefined} aria-current={s.id === highlightId ? 'step' : undefined}
+                  className={cn('rounded-lg border px-3 py-2.5', stepTone[s.status], s.id === highlightId && 'border-brand bg-brand/10 ring-2 ring-brand/40')}>
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="tabular w-14 text-xs font-medium text-muted">{t('board.stage', { n: s.seq })}</span>
                     <span className={cn('grid size-6 place-items-center rounded', style.cls)}><style.Icon className="size-3.5" aria-hidden /></span>
@@ -122,7 +137,8 @@ export function JobPage({ jobId, embedded = false }: { jobId: string; embedded?:
                       </span>
                     )}
                     {s.machine_id && <span className="text-sm text-muted">· {machineName.get(s.machine_id)}</span>}
-                    <span className="ml-auto rounded-full bg-surface-2 px-2 py-0.5 text-xs">{t(`stepStatus.${s.status}`)}</span>
+                    {s.id === highlightId && <span className="ml-auto rounded-full bg-brand px-2 py-0.5 text-xs font-medium text-brand-fg">{t('job.thisStep')}</span>}
+                    <span className={cn('rounded-full bg-surface-2 px-2 py-0.5 text-xs', s.id !== highlightId && 'ml-auto')}>{t(`stepStatus.${s.status}`)}</span>
                   </div>
                   <div className="mt-1.5 grid grid-cols-2 gap-x-4 gap-y-0.5 pl-16 text-xs text-muted sm:grid-cols-4">
                     <span>{t('job.planned')}: {fmtTime(s.planned_start)}</span>
@@ -286,10 +302,10 @@ export function JobTicketPage({ jobId }: { jobId: string }) {
 }
 
 // Job card as a popup over the board / shop floor, so the user never leaves that page.
-export function JobModal({ jobId, title, onClose }: { jobId: string; title: string; onClose: () => void }) {
+export function JobModal({ jobId, title, stepId, onClose }: { jobId: string; title: string; stepId?: string; onClose: () => void }) {
   return (
     <Modal title={title} onClose={onClose}>
-      <JobPage jobId={jobId} embedded />
+      <JobPage jobId={jobId} embedded focusStepId={stepId} />
     </Modal>
   )
 }

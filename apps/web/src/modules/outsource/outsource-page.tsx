@@ -96,7 +96,7 @@ export function OutsourcePage() {
       <div className="grid gap-4 lg:grid-cols-3">
         <Lane title={t('outsource.toSend', { n: toSend.length })} Icon={Send}>
           {toSend.map((s) => (
-            <Item key={s.id} title={`${processName.get(s.process_id) ?? '—'} · ${(s.vendor_id && vendorName.get(s.vendor_id)) ?? '—'}`} job={s.job}
+            <Item key={s.id} title={`${processName.get(s.process_id) ?? '—'} · ${(s.vendor_id && vendorName.get(s.vendor_id)) ?? '—'}`} job={s.job} stepId={s.id}
               sub={t('plan.pcs', { n: Number(s.planned_qty).toLocaleString() })}
               badge={s.outsource_note ? <p className="line-clamp-2 whitespace-pre-wrap text-xs text-muted">{s.outsource_note}</p> : undefined}>
               {canAct && <Button size="sm" onClick={() => setSending(s)}><Send className="size-3.5" aria-hidden />{t('outsource.send')}</Button>}
@@ -109,7 +109,7 @@ export function OutsourcePage() {
             const days = daysUntil(o.expected_at.slice(0, 10))
             const late = new Date(o.expected_at).getTime() < Date.now()
             return (
-              <Item key={o.id} title={`${o.doc_no} · ${vendorName.get(o.vendor_id) ?? ''}`} job={o.step.job}
+              <Item key={o.id} title={`${o.doc_no} · ${vendorName.get(o.vendor_id) ?? ''}`} job={o.step.job} stepId={o.step.id}
                 sub={`${processName.get(o.step.process_id) ?? ''} · ${Number(o.qty_sent).toLocaleString()}`}
                 badge={late
                   ? <span className="inline-flex items-center gap-1 text-xs font-medium text-status-risk"><AlertTriangle className="size-3.5" aria-hidden />{t('outsource.overdue', { n: Math.max(-days, 0) || 1 })}</span>
@@ -122,7 +122,7 @@ export function OutsourcePage() {
 
         <Lane title={t('outsource.toQc', { n: toQc.length })} Icon={ClipboardCheck}>
           {toQc.map((o) => (
-            <Item key={o.id} title={`${o.doc_no} · ${vendorName.get(o.vendor_id) ?? ''}`} job={o.step.job}
+            <Item key={o.id} title={`${o.doc_no} · ${vendorName.get(o.vendor_id) ?? ''}`} job={o.step.job} stepId={o.step.id}
               sub={`${t('outsource.qtyReceived')} ${Number(o.qty_received ?? 0).toLocaleString()}`}>
               {canAct && <Button size="sm" onClick={() => setChecking(o)}><ClipboardCheck className="size-3.5" aria-hidden />{t('outsource.qc')}</Button>}
             </Item>
@@ -156,7 +156,7 @@ export function OutsourcePage() {
                   return (
                     <tr key={s.id} className="border-t border-border align-top">
                       <td className="px-4 py-2">
-                        <JobLink jobId={s.job.id} title={`${s.job.job_no} · ${s.job.title}`} className="font-medium hover:text-brand">{s.job.job_no}</JobLink>
+                        <JobLink jobId={s.job.id} stepId={s.id} title={`${s.job.job_no} · ${s.job.title}`} className="font-medium hover:text-brand">{s.job.job_no}</JobLink>
                         <div className="max-w-48 truncate text-xs text-muted">{s.job.title}</div>
                       </td>
                       <td className="px-4 py-2">{t('templates.level', { n: s.seq })} · {processName.get(s.process_id) ?? '—'}</td>
@@ -245,13 +245,13 @@ function Lane({ title, Icon, children }: { title: string; Icon: typeof Send; chi
   )
 }
 
-function Item({ title, job, sub, badge, children }: { title: string; job: { id: string; job_no: string; title: string }; sub: string; badge?: ReactNode; children?: ReactNode }) {
+function Item({ title, job, stepId, sub, badge, children }: { title: string; job: { id: string; job_no: string; title: string }; stepId: string; sub: string; badge?: ReactNode; children?: ReactNode }) {
   return (
     <article className="rounded-lg border border-border bg-surface p-3 text-sm">
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <div className="truncate font-semibold">{title}</div>
-          <JobLink jobId={job.id} title={`${job.job_no} · ${job.title}`} className="block max-w-full truncate text-xs text-muted hover:text-brand">{job.job_no} · {job.title}</JobLink>
+          <JobLink jobId={job.id} stepId={stepId} title={`${job.job_no} · ${job.title}`} className="block max-w-full truncate text-xs text-muted hover:text-brand">{job.job_no} · {job.title}</JobLink>
           <div className="tabular text-xs text-muted">{sub}</div>
         </div>
         {children}

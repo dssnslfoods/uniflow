@@ -246,7 +246,7 @@ export function FloorPage({ focusStepId }: { focusStepId?: string }) {
         <SpecSheet step={viewing} processName={processName.get(viewing.process_id)}
           machineName={viewing.machine_id ? machineName.get(viewing.machine_id) : undefined} onClose={() => setViewing(null)} onOpenJob={() => setJobOpen(viewing)} />
       )}
-      {jobOpen && <JobModal jobId={jobOpen.job_id} title={`${jobOpen.job.job_no} · ${jobOpen.job.title}`} onClose={() => setJobOpen(null)} />}
+      {jobOpen && <JobModal jobId={jobOpen.job_id} stepId={jobOpen.id} title={`${jobOpen.job.job_no} · ${jobOpen.job.title}`} onClose={() => setJobOpen(null)} />}
       {completing && <CompleteSheet step={completing} onClose={() => setCompleting(null)} />}
       {reporting && machine && machine !== MANUAL && <DowntimeSheet machineId={machine} onClose={() => setReporting(false)} />}
     </div>

@@ -502,6 +502,7 @@ const th = {
   },
   job: {
     flow: 'ขั้นตอนการผลิต',
+    thisStep: 'ขั้นตอนนี้',
     activity: 'ประวัติการทำงาน',
     progress: 'ความคืบหน้า {{p}}%',
     plannedFinish: 'คาดว่าเสร็จ {{d}}',
@@ -1531,6 +1532,7 @@ const en: typeof th = {
   },
   job: {
     flow: 'Production flow',
+    thisStep: 'This step',
     activity: 'Activity',
     progress: '{{p}}% done',
     plannedFinish: 'Expected finish {{d}}',

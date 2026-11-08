@@ -48,7 +48,7 @@ export function StepDrawer({ step, processName, machineName, focused, onFocusJob
 
   return (
     <>
-    {jobOpen && <JobModal jobId={step.job_id} title={`${step.job.job_no} · ${step.job.title}`} onClose={() => setJobOpen(false)} />}
+    {jobOpen && <JobModal jobId={step.job_id} stepId={step.id} title={`${step.job.job_no} · ${step.job.title}`} onClose={() => setJobOpen(false)} />}
     <Drawer open title={`${step.job.job_no} · ${t('board.stage', { n: step.seq })}`} onClose={onClose}
       footer={
         <>
