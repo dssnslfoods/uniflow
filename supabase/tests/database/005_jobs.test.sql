@@ -19,7 +19,7 @@ select tests.member((select tenant_a from t_ctx), tests.user('staff@a.test'), '{
 select tests.login(tests.user('owner@a.test'));
 insert into app.processes (code, name, step_type) values
   ('PRINT', 'พิมพ์ออฟเซ็ท', 'internal'), ('CUT', 'ตัด', 'internal'),
-  ('UV', 'เคลือบ UV', 'outsource'), ('PACK', 'แพ็ก', 'internal');
+  ('UV', 'เคลือบ UV', 'internal'), ('PACK', 'แพ็ก', 'internal');
 insert into app.machines (code, name, max_cap_per_hour, setup_min, efficiency_pct, makeready_waste_units)
 values ('SM74', 'Heidelberg SM74', 8000, 30, 80, 100), ('CUT1', 'Polar 115', 20000, 10, 90, 0);
 insert into app.machine_processes (machine_id, process_id)

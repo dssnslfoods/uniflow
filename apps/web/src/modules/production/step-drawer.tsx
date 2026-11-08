@@ -11,6 +11,7 @@ import { ErrorNote, ListSkeleton } from '@/shared/ui/page'
 import { stepTypeStyle } from '../masters/processes/step-type'
 import { formatDate } from '../orders/format'
 import { formatMinutes, runMinutes, useJobDetail, type BoardStep } from './api'
+import { JobImages } from './job-images'
 import { JobStatusPill } from './job-status'
 
 const fmtTime = (iso: string | null) =>
@@ -105,6 +106,11 @@ export function StepDrawer({ step, processName, machineName, focused, onFocusJob
               <span className={cn(step.job.is_at_risk && 'font-semibold text-status-risk')}>{formatDate(step.job.due_date)}</span>
             </Row>
           </dl>
+        </section>
+
+        <section>
+          <h4 className="mb-2 text-[13px] font-medium">{t('jobImages.title')}</h4>
+          <JobImages jobId={step.job_id} open={step.job.status !== 'completed' && step.job.status !== 'cancelled'} />
         </section>
 
         <section>

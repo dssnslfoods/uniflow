@@ -29,22 +29,21 @@ select tests.run('กล่องครีม 50 ml', 'PLATE', 4);
 select tests.run('กล่องครีม 50 ml', 'OFFSET', 5000);
 select is((tests.step('กล่องครีม 50 ml', 'COAT')).status::text, 'ready', 'coating is ready to send out');
 
-select throws_ok(format($$ select api.send_outsource(%L, (select id from app.vendors limit 1), 5000, now() + interval '2 days') $$,
+select throws_ok(format($$ select api.send_outsource(%L, 5000, now() + interval '2 days') $$,
                         (tests.step('กล่องครีม 50 ml', 'DIECUT')).id),
                  'P0001', 'outsource.not_outsource_step', 'only outsource steps go to vendors');
-select throws_ok(format($$ select api.send_outsource(%L, (select id from app.vendors limit 1), 5000, now() - interval '1 hour') $$,
+select throws_ok(format($$ select api.send_outsource(%L, 5000, now() - interval '1 hour') $$,
                         (tests.step('กล่องครีม 50 ml', 'COAT')).id),
                  'P0001', 'outsource.expected_in_past', 'promised date must be in the future');
 
 create temp table t_os as
-select api.send_outsource((tests.step('กล่องครีม 50 ml', 'COAT')).id, (select id from app.vendors where code = 'V-UV'),
-                          5000, date_trunc('hour', now()) + interval '3 days', 3500, 'เคลือบ UV เงา') as id;
+select api.send_outsource((tests.step('กล่องครีม 50 ml', 'COAT')).id, 5000, date_trunc('hour', now()) + interval '3 days', 3500, 'เคลือบ UV เงา') as id;
 grant select on t_os to public;
 select ok((select doc_no like 'OS-%' from app.outsource_orders where id = (select id from t_os)), 'order number assigned');
 select is((tests.step('กล่องครีม 50 ml', 'COAT')).status::text, 'in_progress', 'outsource step runs while at the vendor');
 select is((tests.step('กล่องครีม 50 ml', 'COAT')).planned_end, date_trunc('hour', now()) + interval '3 days', 'schedule uses the promised date');
 select ok((tests.step('กล่องครีม 50 ml', 'DIECUT')).planned_start >= date_trunc('hour', now()) + interval '3 days', 'die-cutting waits for the coating');
-select throws_ok(format($$ select api.send_outsource(%L, (select id from app.vendors limit 1), 1, now() + interval '1 day') $$,
+select throws_ok(format($$ select api.send_outsource(%L, 1, now() + interval '1 day') $$,
                         (tests.step('กล่องครีม 50 ml', 'COAT')).id),
                  'P0001', 'step.not_ready', 'a step has one open order at a time');
 
@@ -64,8 +63,7 @@ select lives_ok(format($$ select api.qc_outsource(%L, false, 0, 'เคลือ
 select is((tests.step('กล่องครีม 50 ml', 'COAT')).status::text, 'ready', 'rejected work can be sent again');
 
 create temp table t_os2 as
-select api.send_outsource((tests.step('กล่องครีม 50 ml', 'COAT')).id, (select id from app.vendors where code = 'V-UV'),
-                          5000, now() + interval '1 day') as id;
+select api.send_outsource((tests.step('กล่องครีม 50 ml', 'COAT')).id, 5000, now() + interval '1 day') as id;
 grant select on t_os2 to public;
 select api.receive_outsource((select id from t_os2), 5000);
 select is((api.qc_outsource((select id from t_os2), true, 40, 'มีรอย 40 แผ่น') ->> 'job_done')::boolean, false, 'QC pass');

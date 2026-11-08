@@ -17,6 +17,8 @@ import { isFloorOnly } from '@/lib/claims'
 import { Input } from '@/shared/ui/input'
 import { useToast } from '@/shared/ui/toast'
 import { useAddRework, useProfileNames, formatMinutes, runMinutes, useJobDetail, type JobDetail } from './api'
+import { JobImages } from './job-images'
+import { StepNote } from './step-note'
 import { JobMaterialsIssue } from '../inventory/job-materials'
 import { ProofPanel } from '../proof/proof-panel'
 import { JobStatusPill } from './job-status'
@@ -49,6 +51,7 @@ export function JobPage({ jobId }: { jobId: string }) {
   const detail = useJobDetail(jobId)
   const { hasRole, claims } = useAuth()
   const canRework = hasRole('admin', 'manager', 'supervisor')
+  const canNote = hasRole('admin', 'manager', 'supervisor', 'staff')
   const { processName, machineName } = useLookups()
   const actorIds = useMemo(() => [...new Set((detail.data?.logs ?? []).map((l) => l.actor_id).filter(Boolean) as string[])], [detail.data])
   const names = useProfileNames(actorIds)
@@ -129,6 +132,7 @@ export function JobPage({ jobId }: { jobId: string }) {
                     )}
                   </div>
                   {s.rework_reason && <p className="mt-1 pl-16 text-xs text-status-paused">{s.rework_reason}</p>}
+                  <StepNote stepId={s.id!} note={s.note} canEdit={canNote && job.status !== 'completed' && job.status !== 'cancelled'} className="mt-1.5 pl-16" />
                   {s.status === 'done' && canRework && (job.status === 'in_production' || job.status === 'ready_to_deliver') && (
                     <ReworkForm stepId={s.id!} suggestedQty={Number(s.waste_qty)} />
                   )}
@@ -136,6 +140,9 @@ export function JobPage({ jobId }: { jobId: string }) {
               )
             })}
           </ol>
+
+          <h3 className="mb-2 mt-5 text-[13px] font-medium">{t('jobImages.title')}</h3>
+          <JobImages jobId={job.id} open={job.status !== 'completed' && job.status !== 'cancelled'} />
 
           <h3 className="mb-2 mt-5 text-[13px] font-medium">{t('job.lines')}</h3>
           <div className="flex flex-wrap gap-1.5">

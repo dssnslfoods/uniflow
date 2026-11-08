@@ -21,6 +21,7 @@ import type { ModuleKey } from '@/modules/settings/api'
 // Pages load on demand (one chunk each); login and onboarding stay in the main bundle.
 const MachinesPage = lazy(() => import('@/modules/masters/machines/machines-page').then((m) => ({ default: m.MachinesPage })))
 const ProcessesPage = lazy(() => import('@/modules/masters/processes/processes-page').then((m) => ({ default: m.ProcessesPage })))
+const VendorsPage = lazy(() => import('@/modules/masters/vendors/vendors-page').then((m) => ({ default: m.VendorsPage })))
 const CustomersPage = lazy(() => import('@/modules/masters/customers/customers-page').then((m) => ({ default: m.CustomersPage })))
 const TemplatesPage = lazy(() => import('@/modules/masters/templates/templates-page').then((m) => ({ default: m.TemplatesPage })))
 const OrdersPage = lazy(() => import('@/modules/orders/orders-page').then((m) => ({ default: m.OrdersPage })))
@@ -206,6 +207,7 @@ const routeTree = rootRoute.addChildren([
     machinesRoute,
     page('/processes', ProcessesPage),
     page('/customers', CustomersPage),
+    page('/vendors', VendorsPage),
     page('/templates', TemplatesPage),
   ]),
 ])

@@ -1,8 +1,8 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useState, type MouseEvent, type ReactNode } from 'react'
 import { appLocale } from '@/shared/locale'
 import { useTranslation } from 'react-i18next'
 import { Link } from '@tanstack/react-router'
-import { CheckCircle2, Hand, OctagonAlert, Pause, Play, Power, X } from 'lucide-react'
+import { ArrowRight, CheckCircle2, FileText, Hand, OctagonAlert, Pause, Play, Power, X } from 'lucide-react'
 import { useAuth } from '@/app/auth'
 import { errorMessage } from '@/lib/errors'
 import { cn } from '@/lib/utils'
@@ -11,6 +11,9 @@ import { ErrorNote, ListSkeleton } from '@/shared/ui/page'
 import { useToast } from '@/shared/ui/toast'
 import { useMachineProcesses, useMachines } from '../masters/machines/api'
 import { useProcesses } from '../masters/processes/api'
+import { formatDate } from '../orders/format'
+import { JobImages } from './job-images'
+import { StepNote } from './step-note'
 import { useMembers } from '../settings/api'
 import {
   formatMinutes,
@@ -18,6 +21,7 @@ import {
   useBoard,
   useCompleteStep,
   useEndDowntime,
+  useFloorSpec,
   useOpenDowntimes,
   usePauseStep,
   useStartDowntime,
@@ -71,6 +75,7 @@ export function FloorPage({ focusStepId }: { focusStepId?: string }) {
   const [machine, setMachine] = useState<string | null>(() => readStored())
   const [completing, setCompleting] = useState<BoardStep | null>(null)
   const [reporting, setReporting] = useState(false)
+  const [viewing, setViewing] = useState<BoardStep | null>(null)
 
   // A scanned job ticket opens the machine of that step.
   useEffect(() => {
@@ -85,6 +90,7 @@ export function FloorPage({ focusStepId }: { focusStepId?: string }) {
     }
   }, [machine])
 
+  const machineName = useMemo(() => new Map((machines.data ?? []).map((m) => [m.id, m.name])), [machines.data])
   const processName = useMemo(() => new Map((processes.data ?? []).map((p) => [p.id, p.name])), [processes.data])
   const hasMachine = useMemo(() => new Set((links.data ?? []).map((l) => l.process_id)), [links.data])
   // Staff assigned to machines see just those; supervisors and up see every machine.
@@ -102,6 +108,11 @@ export function FloorPage({ focusStepId }: { focusStepId?: string }) {
   const down = machine && machine !== MANUAL ? downtimes.data?.find((d) => d.machine_id === machine) : undefined
 
   const onError = (e: unknown) => toast({ tone: 'error', message: errorMessage(e) })
+  // A tap anywhere on a card opens its spec, except on the card's own buttons and links.
+  const openSpec = (s: BoardStep) => (e: MouseEvent) => {
+    if ((e.target as HTMLElement).closest('button, a, input')) return
+    setViewing(s)
+  }
 
   if (board.isLoading || machines.isLoading) return <ListSkeleton />
   const err = board.error ?? machines.error
@@ -158,11 +169,11 @@ export function FloorPage({ focusStepId }: { focusStepId?: string }) {
           )}
 
           {current && (
-            <section className={cn('rounded-2xl border-2 p-4', current.status === 'in_progress' ? 'border-status-progress bg-status-progress/5' : 'border-status-paused bg-status-paused/5')}>
+            <section onClick={openSpec(current)} className={cn('cursor-pointer rounded-2xl border-2 p-4', current.status === 'in_progress' ? 'border-status-progress bg-status-progress/5' : 'border-status-paused bg-status-paused/5')}>
               <p className={cn('mb-2 text-sm font-semibold uppercase tracking-wide', current.status === 'in_progress' ? 'text-status-progress' : 'text-status-paused')}>
                 {current.status === 'in_progress' ? t('floor.running') : t('floor.paused')}
               </p>
-              <StepSummary step={current} processName={processName.get(current.process_id)} big />
+              <StepSummary step={current} processName={processName.get(current.process_id)} big onSpec={() => setViewing(current)} />
               <p className="tabular mt-3 text-lg">
                 {t('floor.elapsed', { t: formatMinutes(t, runMinutes(current, now)) })}
                 {current.est_minutes != null && <span className="text-muted"> / {t('floor.est', { t: formatMinutes(t, Number(current.est_minutes)) })}</span>}
@@ -200,8 +211,8 @@ export function FloorPage({ focusStepId }: { focusStepId?: string }) {
                 {queue.map((s) => {
                   const blocked = s.status === 'pending' || !!current || !!down
                   return (
-                    <li key={s.id} className={cn('rounded-2xl border bg-surface p-4', s.id === focusStepId ? 'border-brand ring-2 ring-brand/40' : 'border-border')}>
-                      <StepSummary step={s} processName={processName.get(s.process_id)} />
+                    <li key={s.id} onClick={openSpec(s)} className={cn('cursor-pointer rounded-2xl border bg-surface p-4', s.id === focusStepId ? 'border-brand ring-2 ring-brand/40' : 'border-border')}>
+                      <StepSummary step={s} processName={processName.get(s.process_id)} onSpec={() => setViewing(s)} />
                       {canAct && (
                         <Button size="lg" className="mt-3 h-14 w-full text-lg" disabled={blocked} loading={start.isPending && start.variables?.p_step === s.id}
                           onClick={() => start.mutate({ p_step: s.id }, { onError })}>
@@ -230,13 +241,17 @@ export function FloorPage({ focusStepId }: { focusStepId?: string }) {
         </>
       )}
 
+      {viewing && (
+        <SpecSheet step={viewing} processName={processName.get(viewing.process_id)}
+          machineName={viewing.machine_id ? machineName.get(viewing.machine_id) : undefined} onClose={() => setViewing(null)} />
+      )}
       {completing && <CompleteSheet step={completing} onClose={() => setCompleting(null)} />}
       {reporting && machine && machine !== MANUAL && <DowntimeSheet machineId={machine} onClose={() => setReporting(false)} />}
     </div>
   )
 }
 
-function StepSummary({ step, processName, big }: { step: BoardStep; processName?: string; big?: boolean }) {
+function StepSummary({ step, processName, big, onSpec }: { step: BoardStep; processName?: string; big?: boolean; onSpec: () => void }) {
   const { t } = useTranslation()
   return (
     <div>
@@ -245,7 +260,13 @@ function StepSummary({ step, processName, big }: { step: BoardStep; processName?
         <span>· {t('board.stage', { n: step.seq })}</span>
         {step.job.due_date && <span className="ml-auto">{t('board.due', { d: new Date(step.job.due_date).toLocaleDateString(appLocale(), { day: 'numeric', month: 'short' }) })}</span>}
       </div>
-      <p className={cn('font-semibold', big ? 'text-2xl' : 'text-xl')}>{processName}</p>
+      <div className="flex items-start gap-2">
+        <p className={cn('min-w-0 flex-1 font-semibold', big ? 'text-2xl' : 'text-xl')}>{processName}</p>
+        <button type="button" onClick={onSpec}
+          className="flex shrink-0 items-center gap-1 rounded-full border border-border px-3 py-1.5 text-sm text-muted hover:bg-surface-2">
+          <FileText className="size-4" aria-hidden />{t('floor.spec.open')}
+        </button>
+      </div>
       <p className={cn('text-muted', big && 'text-lg')}>{step.job.title}</p>
       <p className="tabular mt-1 text-lg font-medium">{t('floor.planned', { q: t('plan.pcs', { n: Number(step.planned_qty).toLocaleString() }) })}</p>
     </div>
@@ -257,7 +278,7 @@ function Sheet({ title, onClose, children }: { title: string; onClose: () => voi
   return (
     <div className="fixed inset-0 z-40 flex items-end justify-center sm:items-center">
       <div className="absolute inset-0 bg-black/40" onClick={onClose} aria-hidden />
-      <section role="dialog" aria-modal="true" aria-label={title} className="relative w-full max-w-xl rounded-t-3xl bg-surface p-5 shadow-2xl sm:rounded-3xl">
+      <section role="dialog" aria-modal="true" aria-label={title} className="relative max-h-[90dvh] w-full max-w-xl overflow-y-auto rounded-t-3xl bg-surface p-5 shadow-2xl sm:rounded-3xl">
         <header className="mb-4 flex items-center justify-between">
           <h2 className="text-xl font-semibold">{title}</h2>
           <button onClick={onClose} className="rounded-full p-2 text-muted hover:bg-surface-2" aria-label="close"><X className="size-6" /></button>
@@ -358,6 +379,104 @@ function DowntimeSheet({ machineId, onClose }: { machineId: string; onClose: () 
         <OctagonAlert className="size-6" aria-hidden />
         {t('floor.reportDown')}
       </Button>
+    </Sheet>
+  )
+}
+
+function SpecRow({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div className="flex items-baseline justify-between gap-4 py-2">
+      <dt className="shrink-0 text-muted">{label}</dt>
+      <dd className="tabular min-w-0 text-right font-medium">{children}</dd>
+    </div>
+  )
+}
+
+// What to make, read-only, for the operator at the machine. No prices (Staff cannot read them).
+function SpecSheet({ step, processName, machineName, onClose }: { step: BoardStep; processName?: string; machineName?: string; onClose: () => void }) {
+  const { t } = useTranslation()
+  const spec = useFloorSpec(step.id, step.job_id)
+  const { hasRole } = useAuth()
+  const canNote = hasRole('admin', 'manager', 'supervisor', 'staff')
+  const info = spec.data?.step
+  const specKeys = ['size', 'paper', 'colors', 'finishing'] as const
+
+  return (
+    <Sheet title={`${step.job.job_no} · ${t('board.stage', { n: step.seq })}`} onClose={onClose}>
+      <div className="flex flex-col gap-5 text-base">
+        <section>
+          <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide text-muted">{t('floor.spec.lines')}</h3>
+          {spec.isLoading ? <ListSkeleton rows={2} /> : spec.error ? <ErrorNote>{errorMessage(spec.error)}</ErrorNote> : spec.data!.lines.length === 0 ? (
+            <p className="text-muted">{t('floor.spec.noLines')}</p>
+          ) : (
+            <ol className="flex flex-col gap-3">
+              {spec.data!.lines.map((l, i) => {
+                const it = l.item
+                const filled = specKeys.filter((k) => it?.spec?.[k])
+                return (
+                  <li key={it?.id ?? i} className="rounded-xl border border-border bg-surface-2/50 p-3">
+                    <div className="flex items-baseline gap-2">
+                      <span className="tabular shrink-0 text-sm text-muted">#{it?.line_no ?? i + 1}</span>
+                      <p className="min-w-0 flex-1 font-semibold">{it?.description ?? '—'}</p>
+                      <span className="tabular shrink-0 font-semibold">{Number(l.qty).toLocaleString()} {it?.uom}</span>
+                    </div>
+                    {filled.length > 0 && (
+                      <dl className="mt-2 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-sm">
+                        {filled.map((k) => (
+                          <div key={k} className="contents">
+                            <dt className="text-muted">{t(`orders.${k}`)}</dt>
+                            <dd>{it!.spec![k]}</dd>
+                          </div>
+                        ))}
+                      </dl>
+                    )}
+                    {it?.note && <p className="mt-2 rounded-lg bg-surface px-3 py-2 text-sm">{it.note}</p>}
+                  </li>
+                )
+              })}
+            </ol>
+          )}
+        </section>
+
+        <section>
+          <h3 className="text-sm font-semibold uppercase tracking-wide text-muted">{t('floor.spec.step')}</h3>
+          <dl className="divide-y divide-border">
+            <SpecRow label={t('floor.spec.process')}>{processName ?? '—'}</SpecRow>
+            <SpecRow label={t('board.detail.machine')}>{step.machine_id ? machineName ?? '—' : t('board.manual')}</SpecRow>
+            <SpecRow label={t('floor.spec.inQty')}>{t('plan.pcs', { n: Number(step.planned_qty).toLocaleString() })}</SpecRow>
+            {info && <SpecRow label={t('floor.spec.nUp')}>{Number(info.n_up)}</SpecRow>}
+            {info && <SpecRow label={t('board.detail.passes')}>{Number(info.passes)}</SpecRow>}
+            <SpecRow label={t('board.detail.estimate')}>{step.est_minutes != null ? formatMinutes(t, Number(step.est_minutes)) : '—'}</SpecRow>
+          </dl>
+          {info?.is_rework && (
+            <p className="mt-2 rounded-lg bg-status-paused/10 px-3 py-2 text-sm text-status-paused">
+              {t('plan.rework')}{info.rework_reason ? `: ${info.rework_reason}` : ''}
+            </p>
+          )}
+          {info && <StepNote stepId={step.id} note={info.note} canEdit={canNote} big className="mt-2" />}
+        </section>
+
+        <section>
+          <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide text-muted">{t('jobImages.title')}</h3>
+          <JobImages jobId={step.job_id} open={step.job.status !== 'completed' && step.job.status !== 'cancelled'} big />
+        </section>
+
+        <section>
+          <h3 className="text-sm font-semibold uppercase tracking-wide text-muted">{t('board.detail.job')}</h3>
+          <dl className="divide-y divide-border">
+            <SpecRow label={t('board.detail.title')}>{step.job.title}</SpecRow>
+            <SpecRow label={t('board.detail.customer')}>{step.job.order?.customer?.name ?? '—'}</SpecRow>
+            <SpecRow label={t('board.detail.due')}>
+              <span className={cn(step.job.is_at_risk && 'text-status-risk')}>{formatDate(step.job.due_date)}</span>
+            </SpecRow>
+          </dl>
+        </section>
+
+        <Link to="/jobs/$jobId" params={{ jobId: step.job_id }}
+          className="inline-flex h-14 items-center justify-center gap-2 rounded-xl border border-border text-lg font-medium hover:bg-surface-2">
+          {t('board.detail.openJob')}<ArrowRight className="size-5" aria-hidden />
+        </Link>
+      </div>
     </Sheet>
   )
 }

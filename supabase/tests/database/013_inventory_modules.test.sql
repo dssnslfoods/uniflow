@@ -91,7 +91,7 @@ select is(api.admin_set_modules((select tenant_a from t_ctx), '{delivery}'), '{d
 reset role;
 select tests.login(tests.user('sup@a.test'));
 select throws_ok($$ select api.receive_stock(tests.mat('P-ART260'), 1, 1) $$, 'P0001', 'Module not enabled: inventory', 'inventory commands blocked when off');
-select throws_ok($$ select api.send_outsource(gen_random_uuid(), gen_random_uuid(), 1, now() + interval '1 day') $$,
+select throws_ok($$ select api.send_outsource(gen_random_uuid(), 1, now() + interval '1 day') $$,
                  'P0001', 'Module not enabled: outsource', 'outsource commands blocked when off');
 
 select * from finish();

@@ -19,6 +19,9 @@ export type JobStep = {
   passes: number
   est_minutes: number | null
   note: string | null
+  outsourced: boolean
+  vendor_id: string | null
+  outsource_note: string | null
   status?: StepStatus
   is_rework?: boolean
 }
@@ -60,7 +63,7 @@ export type Approval = {
 const jobSelect =
   'id, job_no, sales_order_id, title, qty, status, due_date, workflow_version, created_at, ' +
   'lines:job_order_items(sales_order_item_id, qty), ' +
-  'steps:job_steps(id, seq, process_id, step_type, machine_id, planned_qty, n_up, passes, est_minutes, note, status, is_rework)'
+  'steps:job_steps(id, seq, process_id, step_type, machine_id, planned_qty, n_up, passes, est_minutes, note, outsourced, vendor_id, outsource_note, status, is_rework)'
 
 export function useOrderJobs(orderId: string) {
   const key = useTenantKey('jobs', orderId)
@@ -128,9 +131,10 @@ function useInvalidatePlan() {
   const deliveriesKey = useTenantKey('deliveries')
   const stockKey = useTenantKey('stock')
   const proofsKey = useTenantKey('proofs')
+  const floorSpecKey = useTenantKey('floor-spec')
   return () =>
     Promise.all(
-      [jobsKey, coverageKey, approvalsKey, ordersKey, boardKey, loadKey, downKey, jobKey, outsourceKey, vendorKey, deliveriesKey, stockKey, proofsKey].map((queryKey) =>
+      [jobsKey, coverageKey, approvalsKey, ordersKey, boardKey, loadKey, downKey, jobKey, outsourceKey, vendorKey, deliveriesKey, stockKey, proofsKey, floorSpecKey].map((queryKey) =>
         qc.invalidateQueries({ queryKey }),
       ),
     )
@@ -176,8 +180,9 @@ export function useSaveJob() {
         const { error: insSteps } = await db()
           .from('job_steps')
           .insert(
-            steps.map(({ seq, process_id, step_type, machine_id, planned_qty, n_up, passes, note }) => ({
-              job_id: job.id, seq, process_id, step_type, machine_id, planned_qty, n_up, passes, note,
+            steps.map(({ seq, process_id, step_type, machine_id, planned_qty, n_up, passes, note, outsourced, vendor_id, outsource_note }) => ({
+              job_id: job.id, seq, process_id, step_type, machine_id: outsourced ? null : machine_id, planned_qty, n_up, passes, note,
+              outsourced, vendor_id: outsourced ? vendor_id : null, outsource_note: outsourced ? outsource_note : null,
             })),
           )
         if (insSteps) throw insSteps
@@ -206,6 +211,8 @@ export const useRejectJobs = () =>
 export const useCancelJob = () => usePlanCommand<{ p_job: string; p_reason: string }>('cancel_job')
 export const useEditWorkflow = () =>
   usePlanCommand<{ p_job: string; p_steps: Record<string, unknown>[]; p_reason: string | null }, null>('edit_workflow')
+// Free-text note on a step; Staff and up, any time before the job closes, no re-approval.
+export const useSetStepNote = () => usePlanCommand<{ p_step: string; p_note: string | null }, null>('set_step_note')
 export const useAddRework = () =>
   usePlanCommand<{ p_step: string; p_qty: number; p_reason: string; p_machine?: string | null }, string>('add_rework_step')
 
@@ -493,6 +500,45 @@ export function useSuggestMachines(stepId: string | null) {
       const { data, error } = await rpc().rpc('suggest_machines', { p_step: stepId })
       if (error) throw error
       return (data as MachineSuggestion[]).sort((a, b) => a.end_at.localeCompare(b.end_at))
+    },
+  })
+}
+
+export type FloorSpecLine = {
+  qty: number
+  item: {
+    id: string
+    line_no: number
+    description: string
+    spec: { size?: string; paper?: string; colors?: string; finishing?: string } | null
+    qty: number
+    uom: string
+    note: string | null
+  } | null
+}
+
+export type FloorSpec = {
+  step: { n_up: number; passes: number; note: string | null; is_rework: boolean; rework_reason: string | null }
+  lines: FloorSpecLine[]
+}
+
+// Job spec for the floor sheet. Columns are listed by name: Staff may not read sales_order_items.unit_price.
+export function useFloorSpec(stepId: string, jobId: string) {
+  const key = useTenantKey('floor-spec', stepId)
+  return useQuery({
+    queryKey: key,
+    queryFn: async () => {
+      const [step, lines] = await Promise.all([
+        db().from('job_steps').select('n_up, passes, note, is_rework, rework_reason').eq('id', stepId).single(),
+        db()
+          .from('job_order_items')
+          .select('qty, item:sales_order_items(id, line_no, description, spec, qty, uom, note)')
+          .eq('job_id', jobId),
+      ])
+      if (step.error) throw step.error
+      if (lines.error) throw lines.error
+      const sorted = (lines.data as unknown as FloorSpecLine[]).sort((a, b) => (a.item?.line_no ?? 0) - (b.item?.line_no ?? 0))
+      return { step: step.data as FloorSpec['step'], lines: sorted } satisfies FloorSpec
     },
   })
 }

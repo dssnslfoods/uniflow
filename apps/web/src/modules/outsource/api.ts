@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { db } from '@/lib/supabase'
 import { useTenantKey } from '@/shared/data'
-import { usePlanCommand } from '../production/api'
+import { usePlanCommand, type JobStatus, type StepStatus } from '../production/api'
 
 export type OutsourceStatus = 'sent' | 'received' | 'qc_passed' | 'rejected' | 'cancelled'
 
@@ -44,6 +44,42 @@ export function useOutsourceOrders() {
   })
 }
 
+export type OutsourcedStep = {
+  id: string
+  seq: number
+  process_id: string
+  status: StepStatus
+  planned_qty: number
+  vendor_id: string | null
+  outsource_note: string | null
+  job: { id: string; job_no: string; title: string; due_date: string | null; status: JobStatus; released_at: string | null }
+  orders: { id: string; doc_no: string; status: OutsourceStatus; expected_at: string; sent_at: string }[]
+}
+
+// Every step the plan sends outside, on jobs that are still open, with its orders.
+export function useOutsourcedSteps() {
+  const key = useTenantKey('outsource', 'steps')
+  return useQuery({
+    queryKey: key,
+    refetchInterval: 60_000,
+    queryFn: async () => {
+      const { data, error } = await db()
+        .from('job_steps')
+        .select(
+          'id, seq, process_id, status, planned_qty, vendor_id, outsource_note, ' +
+            'job:jobs!inner(id, job_no, title, due_date, status, released_at), ' +
+            'orders:outsource_orders(id, doc_no, status, expected_at, sent_at)',
+        )
+        .eq('outsourced', true)
+        .in('job.status', ['planning', 'pending_approval', 'approved', 'in_production', 'on_hold'])
+      if (error) throw error
+      return (data as unknown as OutsourcedStep[]).sort(
+        (a, b) => (a.job.due_date ?? '9999').localeCompare(b.job.due_date ?? '9999') || a.job.job_no.localeCompare(b.job.job_no) || a.seq - b.seq,
+      )
+    },
+  })
+}
+
 export type VendorPerformance = {
   vendor_id: string
   name: string
@@ -69,7 +105,7 @@ export function useVendorPerformance() {
 
 export const useSendOutsource = () =>
   usePlanCommand<
-    { p_step: string; p_vendor: string; p_qty: number; p_expected_at: string; p_cost: number | null; p_note: string | null },
+    { p_step: string; p_qty: number; p_expected_at: string; p_cost: number | null; p_note: string | null },
     string
   >('send_outsource')
 export const useReceiveOutsource = () => usePlanCommand<{ p_order: string; p_qty: number; p_cost: number | null }, null>('receive_outsource')

@@ -98,7 +98,7 @@ export const contentEn: ManualText = {
           '[[nav.machines]]: add machines with their capacity and the processes each can run.',
           '[[nav.templates]]: create step sets for your common products.',
           '[[nav.customers]]: add customers with their delivery addresses.',
-          'If the modules are on: add vendors and materials in [[nav.settings_page]], then receive opening stock in [[nav.inventory]].',
+          'If the modules are on: add the shops you outsource to in [[nav.vendors]] and materials in [[nav.settings_page]], then receive opening stock in [[nav.inventory]].',
         ],
       },
       { warn: 'Add [[nav.processes]] before [[nav.machines]], because a machine must be linked to the processes it can run. A machine with no link cannot be picked during planning.' },
@@ -272,8 +272,9 @@ export const contentEn: ManualText = {
     blocks: [
       {
         steps: [
-          'When a job reaches an outsourced step, it appears under **To send** on [[nav.outsource]].',
-          'Press [[outsource.send]] and choose the vendor, quantity, [[outsource.expected]] and cost.',
+          'While planning, tick **[[plan.outsource]]** on the step, pick the [[plan.vendor]] and fill in [[plan.outsourceNote]] — this is the only place outsourcing is decided.',
+          'When the job reaches that step it appears under **To send** on [[nav.outsource]]; the **Steps sent outside** table shows every such step from planning on.',
+          'Press [[outsource.send]] and enter the quantity, [[outsource.expected]] and cost (the vendor comes from the plan).',
           'When it comes back, press [[outsource.receive]] under **At vendor** and enter the quantity received.',
           'Press [[outsource.qc]], then choose [[outsource.pass]] or [[outsource.reject]] with the quantity and reason.',
         ],
@@ -376,7 +377,6 @@ export const contentEn: ManualText = {
         defs: [
           { term: '[[stepType.design]]', desc: 'Design work, linked to proof approval.' },
           { term: '[[stepType.internal]]', desc: 'Runs on a machine in your shop.' },
-          { term: '[[stepType.outsource]]', desc: 'Sent to a vendor and managed on [[nav.outsource]].' },
           { term: '[[stepType.qc]] / [[stepType.delivery]]', desc: 'In-house checks or dispatch. With no machine linked they are recorded under [[floor.noMachine]].' },
         ],
       },
@@ -447,8 +447,8 @@ export const contentEn: ManualText = {
       },
       { h: '[[settings.tabs.calendar]]' },
       { p: 'Use [[settings.addShift]] for each day and [[settings.addHoliday]] for days off. All start and finish times use this, so enter holidays ahead of time; a wrong calendar makes every estimate wrong.' },
-      { h: '[[settings.tabs.vendors]]' },
-      { p: 'Press [[settings.vendorAdd]], then enter contacts, services and lead times, so the usual turnaround is shown when sending work.' },
+      { h: '[[nav.vendors]]' },
+      { p: 'Vendors now live under [[nav.masters]] › [[nav.vendors]]. Press [[settings.vendorAdd]], then enter contacts, the steps they take on and their usual days. This list is what the plan offers when a step is ticked [[plan.outsource]].' },
       { h: '[[settings.tabs.materials]]' },
       { p: 'Press [[settings.materialAdd]], then enter category, stock unit, purchase unit, conversion and minimum stock. For example, buy by the ream and use by the sheet: 1 ream = 500 sheets.' },
     ],

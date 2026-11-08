@@ -1,7 +1,7 @@
 -- D-24 deliveries stop at good output; D-25 Staff sees no selling prices or dashboard.
 begin;
 \ir ../helpers/auth.sql
-select plan(19);
+select plan(21);
 
 create temp table t_ctx as select tests.tenant(tests.user('owner@s.test'), 'S') as tenant_s;
 grant select on t_ctx to public;
@@ -71,6 +71,12 @@ select tests.login(tests.user('staff@s.test'));
 select is((select count(*)::int from app.sales_order_items), 1, 'staff still reads order lines');
 select throws_ok($$ select unit_price from app.sales_order_items $$, '42501', 'permission denied for table sales_order_items', 'not the price column');
 select is((select count(*)::int from app.sales_order_item_prices_v), 0, 'the price view is empty for staff');
+-- The floor spec sheet: PO lines with spec and note, and the step's own details (no price column)
+select is((select count(*)::int from app.job_order_items l
+             join app.sales_order_items i on i.id = l.sales_order_item_id
+           cross join lateral (select l.qty, i.id, i.line_no, i.description, i.spec, i.qty, i.uom, i.note) x
+           where l.job_id = (select id from t_job)), 1, 'staff reads the job spec lines');
+select lives_ok($$ select n_up, passes, note, is_rework, rework_reason from app.job_steps $$, 'staff reads the step details');
 select throws_ok($$ select api.dashboard_summary() $$, 'P0001', 'auth.forbidden', 'staff has no dashboard');
 reset role;
 select tests.login(tests.user('exec@s.test'));

@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useMemo, useState, type ButtonHTMLAttributes, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from '@tanstack/react-router'
-import { AlertTriangle, ArrowDown, ArrowLeft, ArrowUp, CheckCircle2, GitFork, Lock, Pencil, Play, Plus, Send, Trash2, X } from 'lucide-react'
+import { AlertTriangle, ArrowDown, ArrowLeft, ArrowUp, CheckCircle2, GitFork, Lock, Pencil, Play, Plus, Send, Trash2, Truck, X } from 'lucide-react'
 import { useAuth } from '@/app/auth'
 import { errorMessage } from '@/lib/errors'
 import { cn } from '@/lib/utils'
 import { Button } from '@/shared/ui/button'
 import { Drawer } from '@/shared/ui/drawer'
-import { Field, Input, Select } from '@/shared/ui/input'
+import { Field, Input, Select, Textarea } from '@/shared/ui/input'
 import { EmptyState, ErrorNote, ListSkeleton } from '@/shared/ui/page'
 import { useToast } from '@/shared/ui/toast'
 import { useMachineProcesses, useMachines, type Machine } from '../masters/machines/api'
@@ -17,6 +17,7 @@ import { useTemplates } from '../masters/templates/api'
 import { useOrder } from '../orders/api'
 import { formatDate } from '../orders/format'
 import { SoStatusPill } from '../orders/so-status'
+import { useVendors } from '../settings/api'
 import {
   formatMinutes,
   useApprovals,
@@ -33,6 +34,8 @@ import {
   type JobLine,
   type JobStep,
 } from './api'
+import { JobImages } from './job-images'
+import { StepNote } from './step-note'
 import { JobStatusPill } from './job-status'
 import { useRelease } from './use-release'
 import { JobMaterialsEditor } from '../inventory/job-materials'
@@ -333,6 +336,7 @@ function JobCard({ job, lines, approvals, canPlan, onDirty }: CardProps) {
   const processes = useProcesses()
   const machines = useMachines()
   const links = useMachineProcesses()
+  const vendors = useVendors()
   const save = useSaveJob()
   const cancel = useCancelJob()
 
@@ -342,6 +346,7 @@ function JobCard({ job, lines, approvals, canPlan, onDirty }: CardProps) {
   const reflowable = canPlan && (job.status === 'approved' || job.status === 'in_production' || job.status === 'on_hold')
   const [flowEdit, setFlowEdit] = useState(false)
   const stepsEditable = editable || flowEdit
+  const canNote = canPlan && job.status !== 'completed' && job.status !== 'cancelled'
   const isLocked = (r: Row) => !!r.status && r.status !== 'pending' && r.status !== 'ready'
   const [title, setTitle] = useState(job.title)
   const [jobLines, setJobLines] = useState<JobLine[]>(job.lines.map((l) => ({ ...l, qty: Number(l.qty) })))
@@ -354,6 +359,7 @@ function JobCard({ job, lines, approvals, canPlan, onDirty }: CardProps) {
   const touch = () => setDirtyLocal(true)
   const processById = useMemo(() => new Map((processes.data ?? []).map((p) => [p.id, p])), [processes.data])
   const machineById = useMemo(() => new Map((machines.data ?? []).map((m) => [m.id, m])), [machines.data])
+  const vendorName = useMemo(() => new Map((vendors.data ?? []).map((v) => [v.id, v.name])), [vendors.data])
   const lineById = useMemo(() => new Map(lines.map((l) => [l.sales_order_item_id, l])), [lines])
   const machinesFor = (processId: string) => {
     const ids = new Set((links.data ?? []).filter((l) => l.process_id === processId).map((l) => l.machine_id))
@@ -397,12 +403,29 @@ function JobCard({ job, lines, approvals, canPlan, onDirty }: CardProps) {
         key: newKey(), seq: 0, parallel: false, process_id: p.id, step_type: p.step_type,
         machine_id: options.length === 1 ? options[0].id : null,
         planned_qty: jobQty || Number(job.qty), n_up: 1, passes: 1, est_minutes: null, note: null,
+        outsourced: false, vendor_id: null, outsource_note: null,
       },
     ])
     touch()
   }
 
+  const missingVendor = rows.some((r) => r.outsourced && !r.vendor_id)
+
+  // Ticking "send outside" drops the machine; unticking puts back the process's own type.
+  function setOutsourced(i: number, on: boolean) {
+    const r = rows[i]
+    const options = machinesFor(r.process_id)
+    update(i, on
+      ? { outsourced: true, step_type: 'outsource', machine_id: null }
+      : { outsourced: false, step_type: processById.get(r.process_id)?.step_type ?? 'internal', vendor_id: null, outsource_note: null,
+          machine_id: options.length === 1 ? options[0].id : null })
+  }
+
   function onSave() {
+    if (missingVendor) {
+      toast({ tone: 'error', message: t('plan.vendorRequired') })
+      return
+    }
     save.mutate(
       { job, title: title.trim(), lines: jobLines, steps: withSeq(rows) },
       {
@@ -416,6 +439,10 @@ function JobCard({ job, lines, approvals, canPlan, onDirty }: CardProps) {
   }
 
   function submitFlow() {
+    if (missingVendor) {
+      toast({ tone: 'error', message: t('plan.vendorRequired') })
+      return
+    }
     const reason = window.prompt(t('plan.reflowReason'))
     if (reason === null) return
     editWorkflow.mutate(
@@ -426,6 +453,7 @@ function JobCard({ job, lines, approvals, canPlan, onDirty }: CardProps) {
           ...(r.id ? { id: r.id } : {}),
           seq: r.seq, process_id: r.process_id, machine_id: r.machine_id,
           planned_qty: r.planned_qty, n_up: r.n_up, passes: r.passes, note: r.note,
+          outsourced: r.outsourced, vendor_id: r.outsourced ? r.vendor_id : null, outsource_note: r.outsourced ? r.outsource_note : null,
         })),
       },
       {
@@ -526,7 +554,8 @@ function JobCard({ job, lines, approvals, canPlan, onDirty }: CardProps) {
           {seqRows.map((r, i) => {
             const p = processById.get(r.process_id)
             const style = stepTypeStyle[r.step_type]
-            const options = machinesFor(r.process_id)
+            const options = r.outsourced ? [] : machinesFor(r.process_id)
+            const canOutsource = p?.step_type !== 'delivery'
             const needsMachine = r.step_type === 'internal' && options.length > 0 && !r.machine_id
             const rowEditable = stepsEditable && !isLocked(r)
             return (
@@ -555,11 +584,15 @@ function JobCard({ job, lines, approvals, canPlan, onDirty }: CardProps) {
                   )
                 )}
 
-                {r.step_type === 'internal' && (
+                {(r.step_type === 'internal' || r.outsourced) && (
                   <div className="flex items-center gap-1.5 text-xs">
                     <NumBox label={t('plan.stepQty')} value={r.planned_qty} disabled={!rowEditable} width="w-20" onChange={(v) => update(i, { planned_qty: v })} />
-                    <NumBox label={t('plan.nUp')} value={r.n_up} disabled={!rowEditable} width="w-12" onChange={(v) => update(i, { n_up: Math.max(1, Math.round(v)) })} />
-                    <NumBox label={t('plan.passes')} value={r.passes} disabled={!rowEditable} width="w-12" onChange={(v) => update(i, { passes: Math.max(1, Math.round(v)) })} />
+                    {!r.outsourced && (
+                      <>
+                        <NumBox label={t('plan.nUp')} value={r.n_up} disabled={!rowEditable} width="w-12" onChange={(v) => update(i, { n_up: Math.max(1, Math.round(v)) })} />
+                        <NumBox label={t('plan.passes')} value={r.passes} disabled={!rowEditable} width="w-12" onChange={(v) => update(i, { passes: Math.max(1, Math.round(v)) })} />
+                      </>
+                    )}
                   </div>
                 )}
 
@@ -579,6 +612,22 @@ function JobCard({ job, lines, approvals, canPlan, onDirty }: CardProps) {
                     <IconBtn label="down" disabled={i === rows.length - 1} onClick={() => move(i, 1)}><ArrowDown className="size-4" /></IconBtn>
                     <IconBtn label={t('common.delete')} onClick={() => { setRows((rs) => rs.filter((_, j) => j !== i)); touch() }}><Trash2 className="size-4" /></IconBtn>
                   </div>
+                )}
+
+                {canOutsource && (rowEditable || r.outsourced) && (
+                  <OutsourceBox
+                    row={r}
+                    editable={rowEditable}
+                    vendors={vendors.data ?? []}
+                    vendorName={r.vendor_id ? vendorName.get(r.vendor_id) : undefined}
+                    onToggle={(on) => setOutsourced(i, on)}
+                    onChange={(patch) => update(i, patch)}
+                  />
+                )}
+
+                {r.id && (
+                  <StepNote stepId={r.id} note={r.note} canEdit={canNote} className="basis-full pl-[4.25rem]"
+                    onSaved={(note) => setRows((rs) => rs.map((x) => (x.key === r.key ? { ...x, note } : x)))} />
                 )}
               </li>
             )
@@ -602,6 +651,11 @@ function JobCard({ job, lines, approvals, canPlan, onDirty }: CardProps) {
         )}
       </div>
 
+      <div className="border-t border-border px-5 py-4">
+        <h4 className="mb-2 text-[13px] font-medium">{t('jobImages.title')}</h4>
+        <JobImages jobId={job.id} open={canNote} />
+      </div>
+
       <JobMaterialsEditor jobId={job.id} editable={canPlan && job.status !== 'completed'} sheetHint={sheetHint} />
 
       {flowEdit && (
@@ -611,7 +665,7 @@ function JobCard({ job, lines, approvals, canPlan, onDirty }: CardProps) {
             <Button variant="ghost" size="sm" onClick={() => { setRows(toRows(job.steps)); setFlowEdit(false); setDirtyLocal(false) }}>
               {t('common.cancel')}
             </Button>
-            <Button size="sm" onClick={submitFlow} loading={editWorkflow.isPending} disabled={!dirty || rows.length === 0}>
+            <Button size="sm" onClick={submitFlow} loading={editWorkflow.isPending} disabled={!dirty || rows.length === 0 || missingVendor}>
               <Send className="size-3.5" aria-hidden />
               {t('plan.reflowSubmit')}
             </Button>
@@ -624,13 +678,66 @@ function JobCard({ job, lines, approvals, canPlan, onDirty }: CardProps) {
           <Button variant="ghost" size="sm" onClick={onCancel}>{t('plan.cancelJob')}</Button>
           <div className="flex items-center gap-3">
             {dirty && <span className="text-xs text-brand">{t('plan.unsaved')}</span>}
-            <Button size="sm" onClick={onSave} loading={save.isPending} disabled={!dirty || !title.trim()}>
+            {missingVendor && <span className="text-xs text-status-paused">{t('plan.vendorRequired')}</span>}
+            <Button size="sm" onClick={onSave} loading={save.isPending} disabled={!dirty || !title.trim() || missingVendor}>
               {t('plan.saveJob')}
             </Button>
           </div>
         </footer>
       )}
     </article>
+  )
+}
+
+// "Send outside" lives only here: tick the step, pick the vendor, write what they should do.
+function OutsourceBox({ row, editable, vendors, vendorName, onToggle, onChange }: {
+  row: Row
+  editable: boolean
+  vendors: { id: string; name: string }[]
+  vendorName: string | undefined
+  onToggle: (on: boolean) => void
+  onChange: (patch: Partial<Row>) => void
+}) {
+  const { t } = useTranslation()
+  if (!editable) {
+    return (
+      <div className="basis-full pl-[4.25rem] text-xs">
+        <span className="inline-flex items-center gap-1 rounded-full bg-status-paused/10 px-2 py-0.5 font-medium text-status-paused">
+          <Truck className="size-3.5" aria-hidden />
+          {t('plan.outsourcedTo', { vendor: vendorName ?? '—' })}
+        </span>
+        {row.outsource_note && <p className="mt-1 whitespace-pre-wrap text-muted">{row.outsource_note}</p>}
+      </div>
+    )
+  }
+  return (
+    <div className={cn('basis-full pl-[4.25rem]', row.outsourced && 'flex flex-col gap-2')}>
+      <label className="inline-flex cursor-pointer items-center gap-2 text-xs">
+        <input type="checkbox" className="accent-[var(--brand)]" checked={row.outsourced} onChange={(e) => onToggle(e.target.checked)} />
+        <Truck className="size-3.5 text-muted" aria-hidden />
+        {t('plan.outsource')}
+      </label>
+      {row.outsourced && (
+        <div className="grid gap-2 rounded-lg border border-status-paused/30 bg-status-paused/5 p-2.5 sm:grid-cols-[14rem_minmax(0,1fr)]">
+          <Field label={t('plan.vendor')}>
+            {(id) => (
+              <Select id={id} className={cn('h-8 text-xs', !row.vendor_id && 'border-status-paused')} value={row.vendor_id ?? ''} required
+                onChange={(e) => onChange({ vendor_id: e.target.value || null })}>
+                <option value="" disabled>{t('outsource.pickVendor')}</option>
+                {vendors.map((v) => <option key={v.id} value={v.id}>{v.name}</option>)}
+              </Select>
+            )}
+          </Field>
+          <Field label={t('plan.outsourceNote')}>
+            {(id) => (
+              <Textarea id={id} rows={2} maxLength={2000} className="text-xs" placeholder={t('plan.outsourceNoteHint')}
+                value={row.outsource_note ?? ''} onChange={(e) => onChange({ outsource_note: e.target.value || null })} />
+            )}
+          </Field>
+          {vendors.length === 0 && <p className="text-xs text-status-paused sm:col-span-2">{t('plan.noVendors')}</p>}
+        </div>
+      )}
+    </div>
   )
 }
 

@@ -98,7 +98,7 @@ export const contentTh: ManualText = {
           '[[nav.machines]]: เพิ่มเครื่องและกำลังผลิต พร้อมเลือกขั้นตอนที่เครื่องทำได้',
           '[[nav.templates]]: สร้างชุดขั้นตอนของงานที่ทำบ่อย',
           '[[nav.customers]]: เพิ่มลูกค้า พร้อมที่อยู่จัดส่ง',
-          'ถ้าเปิดโมดูลไว้: เพิ่ม Vendor และวัตถุดิบที่ [[nav.settings_page]] แล้วรับยอดตั้งต้นเข้าที่ [[nav.inventory]]',
+          'ถ้าเปิดโมดูลไว้: เพิ่มร้านที่รับงานจ้างที่ [[nav.vendors]] และวัตถุดิบที่ [[nav.settings_page]] แล้วรับยอดตั้งต้นเข้าที่ [[nav.inventory]]',
         ],
       },
       { warn: 'ต้องเพิ่ม [[nav.processes]] ก่อน [[nav.machines]] เพราะเครื่องต้องผูกกับขั้นตอนที่ทำได้ ถ้าเครื่องไม่ได้ผูกขั้นตอน จะเลือกเครื่องนั้นตอนวางแผนไม่ได้' },
@@ -272,8 +272,9 @@ export const contentTh: ManualText = {
     blocks: [
       {
         steps: [
-          'เมื่อถึงขั้นตอนจ้างนอก งานจะมาอยู่ช่อง **รอส่ง** ของหน้า [[nav.outsource]]',
-          'กด [[outsource.send]] เลือก Vendor จำนวน [[outsource.expected]] และค่าจ้าง',
+          'ตอนวางแผน ติ๊ก **[[plan.outsource]]** ที่ขั้นตอนนั้น เลือก [[plan.vendor]] และกรอก [[plan.outsourceNote]] — ส่งงานข้างนอกกำหนดได้ที่นี่ที่เดียว',
+          'เมื่อถึงขั้นตอนนั้น งานจะมาอยู่ช่อง **รอส่ง** ของหน้า [[nav.outsource]] ตาราง **ขั้นตอนที่ส่งข้างนอก** แสดงสถานะทุกขั้นตอนตั้งแต่ยังวางแผน',
+          'กด [[outsource.send]] ใส่จำนวน [[outsource.expected]] และค่าจ้าง (Vendor มาจากแผน)',
           'เมื่อของกลับมา กด [[outsource.receive]] ที่ช่อง **อยู่ที่ Vendor** ใส่จำนวนที่รับคืน',
           'กด [[outsource.qc]] แล้วเลือก [[outsource.pass]] หรือ [[outsource.reject]] พร้อมจำนวนและเหตุผล',
         ],
@@ -376,7 +377,6 @@ export const contentTh: ManualText = {
         defs: [
           { term: '[[stepType.design]]', desc: 'งานออกแบบ เชื่อมกับการอนุมัติ Proof' },
           { term: '[[stepType.internal]]', desc: 'ทำบนเครื่องในโรงงาน' },
-          { term: '[[stepType.outsource]]', desc: 'ส่งให้ Vendor จัดการที่หน้า [[nav.outsource]]' },
           { term: '[[stepType.qc]] / [[stepType.delivery]]', desc: 'ขั้นตรวจงานหรือจัดส่งภายใน ถ้าไม่ผูกเครื่องจะบันทึกที่ [[floor.noMachine]]' },
         ],
       },
@@ -447,8 +447,8 @@ export const contentTh: ManualText = {
       },
       { h: '[[settings.tabs.calendar]]' },
       { p: 'กด [[settings.addShift]] เพื่อตั้งกะแต่ละวัน และ [[settings.addHoliday]] เพื่อเพิ่มวันหยุด ระบบใช้คำนวณเวลาเริ่ม-เสร็จ จึงควรใส่วันหยุดล่วงหน้า ถ้าปฏิทินผิด เวลาคาดการณ์ทุกงานจะผิดตาม' },
-      { h: '[[settings.tabs.vendors]]' },
-      { p: 'กด [[settings.vendorAdd]] ใส่ผู้ติดต่อและบริการที่รับ พร้อมเวลาที่ใช้ เพื่อให้เห็นระยะเวลาโดยประมาณตอนส่งงาน' },
+      { h: '[[nav.vendors]]' },
+      { p: 'Vendor ย้ายไปอยู่เมนู [[nav.masters]] › [[nav.vendors]] แล้ว กด [[settings.vendorAdd]] ใส่ผู้ติดต่อ ขั้นตอนที่รับทำ และจำนวนวันที่ใช้ รายชื่อนี้จะให้เลือกตอนติ๊ก [[plan.outsource]] ในแผนการผลิต' },
       { h: '[[settings.tabs.materials]]' },
       { p: 'กด [[settings.materialAdd]] ใส่หมวด หน่วยใช้ หน่วยซื้อ อัตราแปลง และสต็อกขั้นต่ำ เช่น ซื้อเป็นรีม ใช้เป็นแผ่น 1 รีม = 500 แผ่น' },
     ],

@@ -6,10 +6,9 @@ import { ErrorNote, PageHeader } from '@/shared/ui/page'
 import { GeneralTab } from './general-tab'
 import { MembersTab } from './members-tab'
 import { CalendarTab } from './calendar-tab'
-import { VendorsTab } from './vendors-tab'
 import { MaterialsTab } from './materials-tab'
 
-const tabs = ['general', 'members', 'calendar', 'vendors', 'materials'] as const
+const tabs = ['general', 'members', 'calendar', 'materials'] as const
 type Tab = (typeof tabs)[number]
 
 export function SettingsPage() {
@@ -41,7 +40,6 @@ export function SettingsPage() {
       {tab === 'general' && <GeneralTab />}
       {tab === 'members' && <MembersTab />}
       {tab === 'calendar' && <CalendarTab />}
-      {tab === 'vendors' && <VendorsTab />}
       {tab === 'materials' && <MaterialsTab />}
     </div>
   )

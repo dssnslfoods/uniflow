@@ -2,7 +2,8 @@ import { useList } from '@/shared/data'
 import type { CapacityUnit } from '../machines/api'
 
 export type StepType = 'design' | 'internal' | 'outsource' | 'qc' | 'delivery'
-export const stepTypes: StepType[] = ['design', 'internal', 'outsource', 'qc', 'delivery']
+// Types a process can have. "outsource" is not one: a plan step is sent outside by ticking it (job_steps.outsourced).
+export const stepTypes: StepType[] = ['design', 'internal', 'qc', 'delivery']
 
 export type Process = {
   id: string
