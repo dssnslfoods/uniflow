@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState, type ButtonHTMLAttributes, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from '@tanstack/react-router'
+import { JobLink } from './job-link'
 import { AlertTriangle, ArrowDown, ArrowLeft, ArrowUp, CheckCircle2, Clock, GitFork, Lock, Pencil, Play, Plus, Send, Trash2, Truck, X } from 'lucide-react'
 import { useAuth } from '@/app/auth'
 import { errorMessage } from '@/lib/errors'
@@ -494,7 +495,7 @@ function JobCard({ job, lines, approvals, canPlan, onDirty }: CardProps) {
   return (
     <article className={cn('rounded-[var(--radius-card)] border bg-surface', dirty ? 'border-brand/60' : 'border-border')}>
       <header className="flex flex-wrap items-center gap-3 border-b border-border px-5 py-3">
-        <Link to="/jobs/$jobId" params={{ jobId: job.id }} className="text-xs font-medium text-muted hover:text-brand">{job.job_no}</Link>
+        <JobLink jobId={job.id} title={`${job.job_no} · ${job.title}`} className="text-xs font-medium text-muted hover:text-brand">{job.job_no}</JobLink>
         {editable ? (
           <Input aria-label={t('plan.jobTitle')} value={title} onChange={(e) => { setTitle(e.target.value); touch() }} className="h-8 max-w-sm flex-1 font-semibold" />
         ) : (

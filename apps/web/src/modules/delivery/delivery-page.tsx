@@ -14,6 +14,7 @@ import { useToast } from '@/shared/ui/toast'
 import { formatDate } from '../orders/format'
 import { useTenant } from '../settings/api'
 import { useCloseJobShort, useCreateDelivery, useDeliverableJobs, useDeliveries, useDelivery, type DeliverableJob } from './api'
+import { JobLink } from '../production/job-link'
 
 const delivered = (j: DeliverableJob) => j.delivered.reduce((s, d) => s + Number(d.qty), 0)
 // Only good pieces can go out (D-24).
@@ -80,7 +81,7 @@ export function DeliveryPage() {
                 <ul>
                   {jobs.map((j, i) => (
                     <li key={j.id} className={cn('flex flex-wrap items-center gap-3 px-5 py-2.5 text-sm', i && 'border-t border-border')}>
-                      <Link to="/jobs/$jobId" params={{ jobId: j.id }} className="font-medium hover:text-brand">{j.job_no} {j.title}</Link>
+                      <JobLink jobId={j.id} title={`${j.job_no} · ${j.title}`} className="font-medium hover:text-brand">{j.job_no} {j.title}</JobLink>
                       <span className="tabular ml-auto text-xs text-muted">{t('delivery.delivered', { n: delivered(j).toLocaleString() })}</span>
                       {j.good_qty < Number(j.qty) && (
                         <span className="tabular text-xs text-status-paused">{t('delivery.goodOnly', { n: j.good_qty.toLocaleString(), q: Number(j.qty).toLocaleString() })}</span>

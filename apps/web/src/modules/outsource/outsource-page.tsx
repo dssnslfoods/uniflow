@@ -1,6 +1,6 @@
 import { useMemo, useState, type FormEvent, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Link } from '@tanstack/react-router'
+import { JobLink } from '../production/job-link'
 import { AlertTriangle, ClipboardCheck, ListChecks, PackageOpen, Send } from 'lucide-react'
 import { useAuth } from '@/app/auth'
 import { errorMessage } from '@/lib/errors'
@@ -156,7 +156,7 @@ export function OutsourcePage() {
                   return (
                     <tr key={s.id} className="border-t border-border align-top">
                       <td className="px-4 py-2">
-                        <Link to="/jobs/$jobId" params={{ jobId: s.job.id }} className="font-medium hover:text-brand">{s.job.job_no}</Link>
+                        <JobLink jobId={s.job.id} title={`${s.job.job_no} · ${s.job.title}`} className="font-medium hover:text-brand">{s.job.job_no}</JobLink>
                         <div className="max-w-48 truncate text-xs text-muted">{s.job.title}</div>
                       </td>
                       <td className="px-4 py-2">{t('templates.level', { n: s.seq })} · {processName.get(s.process_id) ?? '—'}</td>
@@ -251,7 +251,7 @@ function Item({ title, job, sub, badge, children }: { title: string; job: { id: 
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <div className="truncate font-semibold">{title}</div>
-          <Link to="/jobs/$jobId" params={{ jobId: job.id }} className="block truncate text-xs text-muted hover:text-brand">{job.job_no} · {job.title}</Link>
+          <JobLink jobId={job.id} title={`${job.job_no} · ${job.title}`} className="block max-w-full truncate text-xs text-muted hover:text-brand">{job.job_no} · {job.title}</JobLink>
           <div className="tabular text-xs text-muted">{sub}</div>
         </div>
         {children}

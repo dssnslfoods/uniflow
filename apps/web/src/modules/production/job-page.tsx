@@ -7,6 +7,7 @@ import { QRCodeSVG } from 'qrcode.react'
 import { errorMessage } from '@/lib/errors'
 import { cn } from '@/lib/utils'
 import { Button } from '@/shared/ui/button'
+import { Modal } from '@/shared/ui/modal'
 import { ErrorNote, ListSkeleton } from '@/shared/ui/page'
 import { useMachines } from '../masters/machines/api'
 import { useProcesses } from '../masters/processes/api'
@@ -46,7 +47,8 @@ function useLookups() {
 }
 
 // Job card (FR-4.8): flow with plan vs actual, PO lines, activity log.
-export function JobPage({ jobId }: { jobId: string }) {
+// `embedded`: shown inside JobModal, so there is no back link and no page-width cap.
+export function JobPage({ jobId, embedded = false }: { jobId: string; embedded?: boolean }) {
   const { t } = useTranslation()
   const detail = useJobDetail(jobId)
   const { hasRole, claims } = useAuth()
@@ -64,9 +66,9 @@ export function JobPage({ jobId }: { jobId: string }) {
   const items = new Map(job.order.items.map((i) => [i.id, i]))
 
   return (
-    <div className="mx-auto max-w-5xl">
+    <div className={cn(!embedded && 'mx-auto max-w-5xl')}>
       <div className="mb-5 flex flex-wrap items-center gap-3">
-        {isFloorOnly(claims) ? (
+        {embedded ? null : isFloorOnly(claims) ? (
           <Link to="/floor" className="rounded-lg p-1.5 text-muted hover:bg-surface-2 hover:text-fg" aria-label={t('common.back')}>
             <ArrowLeft className="size-5" />
           </Link>
@@ -280,5 +282,14 @@ export function JobTicketPage({ jobId }: { jobId: string }) {
         ))}
       </ol>
     </div>
+  )
+}
+
+// Job card as a popup over the board / shop floor, so the user never leaves that page.
+export function JobModal({ jobId, title, onClose }: { jobId: string; title: string; onClose: () => void }) {
+  return (
+    <Modal title={title} onClose={onClose}>
+      <JobPage jobId={jobId} embedded />
+    </Modal>
   )
 }

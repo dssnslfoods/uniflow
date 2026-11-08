@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { appLocale, localDate } from '@/shared/locale'
 import { useTranslation } from 'react-i18next'
-import { Link } from '@tanstack/react-router'
+import { JobLink } from './job-link'
 import {
   closestCorners,
   DndContext,
@@ -567,14 +567,9 @@ function Card({ step, processName, dimmed, lifted, onFocusJob, onOpen, onMoveTo 
         </button>
       </div>
       <div className="mt-0.5 truncate text-muted">
-        <Link
-          to="/jobs/$jobId"
-          params={{ jobId: step.job_id }}
-          className="hover:text-brand hover:underline"
-          onPointerDown={(e) => e.stopPropagation()}
-        >
+        <JobLink jobId={step.job_id} title={`${step.job.job_no} · ${step.job.title}`} className="hover:text-brand hover:underline">
           {step.job.title}
-        </Link>
+        </JobLink>
         {step.job.order?.customer?.name ? ` · ${step.job.order.customer.name}` : ''}
       </div>
       <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px]">

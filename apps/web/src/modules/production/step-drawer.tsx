@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from '@tanstack/react-router'
 import { AlertTriangle, ArrowRight, Hammer, Highlighter } from 'lucide-react'
@@ -12,6 +12,7 @@ import { stepTypeStyle } from '../masters/processes/step-type'
 import { formatDate } from '../orders/format'
 import { formatMinutes, runMinutes, useJobDetail, type BoardStep } from './api'
 import { JobImages } from './job-images'
+import { JobModal } from './job-page'
 import { JobStatusPill } from './job-status'
 
 const fmtTime = (iso: string | null) =>
@@ -43,18 +44,20 @@ export function StepDrawer({ step, processName, machineName, focused, onFocusJob
   const full = detail.data?.job.steps.find((s) => s.id === step.id)
   const ran = full ? runMinutes(full) : 0
   const canRecord = step.status === 'ready' || step.status === 'in_progress' || step.status === 'paused'
+  const [jobOpen, setJobOpen] = useState(false)
 
   return (
+    <>
+    {jobOpen && <JobModal jobId={step.job_id} title={`${step.job.job_no} · ${step.job.title}`} onClose={() => setJobOpen(false)} />}
     <Drawer open title={`${step.job.job_no} · ${t('board.stage', { n: step.seq })}`} onClose={onClose}
       footer={
         <>
           <Button variant="secondary" onClick={onFocusJob}>
             <Highlighter className="size-4" aria-hidden />{focused ? t('board.detail.unfocus') : t('board.detail.focus')}
           </Button>
-          <Link to="/jobs/$jobId" params={{ jobId: step.job_id }}
-            className="inline-flex h-9 items-center gap-2 rounded-lg bg-brand px-4 text-brand-fg shadow-sm hover:opacity-90">
+          <Button onClick={() => setJobOpen(true)}>
             {t('board.detail.openJob')}<ArrowRight className="size-4" aria-hidden />
-          </Link>
+          </Button>
         </>
       }>
       <div className="flex flex-col gap-5">
@@ -130,5 +133,6 @@ export function StepDrawer({ step, processName, machineName, focused, onFocusJob
         </section>
       </div>
     </Drawer>
+    </>
   )
 }

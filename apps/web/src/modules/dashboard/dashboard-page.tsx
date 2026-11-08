@@ -9,6 +9,7 @@ import { useMachines } from '../masters/machines/api'
 import { formatDate } from '../orders/format'
 import { useMachineLoad } from '../production/api'
 import { useDashboard } from './api'
+import { JobLink } from '../production/job-link'
 
 // Load state uses the reserved status colours and always shows the % as text (dataviz: never colour alone).
 function loadState(pct: number) {
@@ -94,13 +95,13 @@ export function DashboardPage() {
             <ul className="flex flex-col divide-y divide-border">
               {s.at_risk_jobs.map((j) => (
                 <li key={j.id} className="py-2">
-                  <Link to="/jobs/$jobId" params={{ jobId: j.id }} className="block hover:text-brand">
+                  <JobLink jobId={j.id} title={`${j.job_no} · ${j.title}`} className="block w-full hover:text-brand">
                     <div className="flex items-baseline justify-between gap-2 text-sm">
                       <span className="truncate font-medium">{j.job_no} {j.title}</span>
                       <span className="shrink-0 text-xs text-status-risk">{t('board.due', { d: formatDate(j.due_date) })}</span>
                     </div>
                     <div className="text-xs text-muted">{j.customer} · {t('dashboard.expected', { d: formatDate(j.planned_finish_at) })}</div>
-                  </Link>
+                  </JobLink>
                 </li>
               ))}
             </ul>

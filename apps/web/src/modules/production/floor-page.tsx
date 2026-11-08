@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState, type MouseEvent, type ReactNode } from 'react'
 import { appLocale } from '@/shared/locale'
 import { useTranslation } from 'react-i18next'
-import { Link } from '@tanstack/react-router'
 import { ArrowRight, CheckCircle2, FileText, Hand, OctagonAlert, Pause, Play, Power, X } from 'lucide-react'
 import { useAuth } from '@/app/auth'
 import { errorMessage } from '@/lib/errors'
@@ -13,6 +12,7 @@ import { useMachineProcesses, useMachines } from '../masters/machines/api'
 import { useProcesses } from '../masters/processes/api'
 import { formatDate } from '../orders/format'
 import { JobImages } from './job-images'
+import { JobModal } from './job-page'
 import { StepNote } from './step-note'
 import { useMembers } from '../settings/api'
 import {
@@ -76,6 +76,7 @@ export function FloorPage({ focusStepId }: { focusStepId?: string }) {
   const [completing, setCompleting] = useState<BoardStep | null>(null)
   const [reporting, setReporting] = useState(false)
   const [viewing, setViewing] = useState<BoardStep | null>(null)
+  const [jobOpen, setJobOpen] = useState<BoardStep | null>(null)
 
   // A scanned job ticket opens the machine of that step.
   useEffect(() => {
@@ -173,7 +174,7 @@ export function FloorPage({ focusStepId }: { focusStepId?: string }) {
               <p className={cn('mb-2 text-sm font-semibold uppercase tracking-wide', current.status === 'in_progress' ? 'text-status-progress' : 'text-status-paused')}>
                 {current.status === 'in_progress' ? t('floor.running') : t('floor.paused')}
               </p>
-              <StepSummary step={current} processName={processName.get(current.process_id)} big onSpec={() => setViewing(current)} />
+              <StepSummary step={current} processName={processName.get(current.process_id)} big onSpec={() => setViewing(current)} onOpenJob={() => setJobOpen(current)} />
               <p className="tabular mt-3 text-lg">
                 {t('floor.elapsed', { t: formatMinutes(t, runMinutes(current, now)) })}
                 {current.est_minutes != null && <span className="text-muted"> / {t('floor.est', { t: formatMinutes(t, Number(current.est_minutes)) })}</span>}
@@ -212,7 +213,7 @@ export function FloorPage({ focusStepId }: { focusStepId?: string }) {
                   const blocked = s.status === 'pending' || !!current || !!down
                   return (
                     <li key={s.id} onClick={openSpec(s)} className={cn('cursor-pointer rounded-2xl border bg-surface p-4', s.id === focusStepId ? 'border-brand ring-2 ring-brand/40' : 'border-border')}>
-                      <StepSummary step={s} processName={processName.get(s.process_id)} onSpec={() => setViewing(s)} />
+                      <StepSummary step={s} processName={processName.get(s.process_id)} onSpec={() => setViewing(s)} onOpenJob={() => setJobOpen(s)} />
                       {canAct && (
                         <Button size="lg" className="mt-3 h-14 w-full text-lg" disabled={blocked} loading={start.isPending && start.variables?.p_step === s.id}
                           onClick={() => start.mutate({ p_step: s.id }, { onError })}>
@@ -243,20 +244,21 @@ export function FloorPage({ focusStepId }: { focusStepId?: string }) {
 
       {viewing && (
         <SpecSheet step={viewing} processName={processName.get(viewing.process_id)}
-          machineName={viewing.machine_id ? machineName.get(viewing.machine_id) : undefined} onClose={() => setViewing(null)} />
+          machineName={viewing.machine_id ? machineName.get(viewing.machine_id) : undefined} onClose={() => setViewing(null)} onOpenJob={() => setJobOpen(viewing)} />
       )}
+      {jobOpen && <JobModal jobId={jobOpen.job_id} title={`${jobOpen.job.job_no} · ${jobOpen.job.title}`} onClose={() => setJobOpen(null)} />}
       {completing && <CompleteSheet step={completing} onClose={() => setCompleting(null)} />}
       {reporting && machine && machine !== MANUAL && <DowntimeSheet machineId={machine} onClose={() => setReporting(false)} />}
     </div>
   )
 }
 
-function StepSummary({ step, processName, big, onSpec }: { step: BoardStep; processName?: string; big?: boolean; onSpec: () => void }) {
+function StepSummary({ step, processName, big, onSpec, onOpenJob }: { step: BoardStep; processName?: string; big?: boolean; onSpec: () => void; onOpenJob: () => void }) {
   const { t } = useTranslation()
   return (
     <div>
       <div className="flex items-center gap-2 text-sm text-muted">
-        <Link to="/jobs/$jobId" params={{ jobId: step.job_id }} className="font-semibold hover:text-brand">{step.job.job_no}</Link>
+        <button type="button" onClick={onOpenJob} className="font-semibold hover:text-brand">{step.job.job_no}</button>
         <span>· {t('board.stage', { n: step.seq })}</span>
         {step.job.due_date && <span className="ml-auto">{t('board.due', { d: new Date(step.job.due_date).toLocaleDateString(appLocale(), { day: 'numeric', month: 'short' }) })}</span>}
       </div>
@@ -393,7 +395,7 @@ function SpecRow({ label, children }: { label: string; children: ReactNode }) {
 }
 
 // What to make, read-only, for the operator at the machine. No prices (Staff cannot read them).
-function SpecSheet({ step, processName, machineName, onClose }: { step: BoardStep; processName?: string; machineName?: string; onClose: () => void }) {
+function SpecSheet({ step, processName, machineName, onClose, onOpenJob }: { step: BoardStep; processName?: string; machineName?: string; onClose: () => void; onOpenJob: () => void }) {
   const { t } = useTranslation()
   const spec = useFloorSpec(step.id, step.job_id)
   const { hasRole } = useAuth()
@@ -472,10 +474,10 @@ function SpecSheet({ step, processName, machineName, onClose }: { step: BoardSte
           </dl>
         </section>
 
-        <Link to="/jobs/$jobId" params={{ jobId: step.job_id }}
+        <button type="button" onClick={onOpenJob}
           className="inline-flex h-14 items-center justify-center gap-2 rounded-xl border border-border text-lg font-medium hover:bg-surface-2">
           {t('board.detail.openJob')}<ArrowRight className="size-5" aria-hidden />
-        </Link>
+        </button>
       </div>
     </Sheet>
   )
