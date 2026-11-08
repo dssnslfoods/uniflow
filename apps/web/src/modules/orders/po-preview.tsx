@@ -76,8 +76,8 @@ export function PoPreview({ orderId, onClose }: { orderId: string; onClose: () =
               {so.note && <Info label={t('orders.note')} value={so.note} wide />}
             </dl>
 
-            <div className="overflow-hidden rounded-[var(--radius-card)] border border-border">
-              <table className="w-full text-left text-sm">
+            <div className="overflow-x-auto rounded-[var(--radius-card)] border border-border">
+              <table className="w-full min-w-[480px] text-left text-sm">
                 <thead className="bg-surface-2 text-xs text-muted">
                   <tr>
                     <th className="px-3 py-2 font-medium">{t('orders.lineNo')}</th>

@@ -60,7 +60,7 @@ export function DashboardPage() {
         </div>
       )}
 
-      <dl className="mb-5 grid grid-cols-2 gap-3 md:grid-cols-5">
+      <dl className="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
         <Tile Icon={Factory} label={t('dashboard.inProduction')} value={s.counts.in_production} to="/board" />
         <Tile Icon={AlertTriangle} label={t('dashboard.atRisk')} value={s.counts.at_risk} tone={s.counts.at_risk > 0 ? 'risk' : undefined} to="/board" />
         <Tile Icon={CheckCheck} label={t('dashboard.pendingApproval')} value={s.counts.pending_approval} tone={s.counts.pending_approval > 0 ? 'warn' : undefined} to="/approvals" />
@@ -68,7 +68,7 @@ export function DashboardPage() {
         <Tile Icon={TrendingUp} label={t('dashboard.otd')} value={otd == null ? '—' : `${otd}%`} hint={otd == null ? t('dashboard.otdNone') : `${s.otd_30d.on_time}/${s.otd_30d.finished}`} />
       </dl>
 
-      <div className="grid gap-5 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
+      <div className="grid grid-cols-1 gap-4 sm:gap-5 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
         <Card title={t('dashboard.load')} hint={t('dashboard.loadHint')}>
           <ul className="flex flex-col gap-3">
             {loadRows.map((m) => {
@@ -95,7 +95,7 @@ export function DashboardPage() {
             <ul className="flex flex-col divide-y divide-border">
               {s.at_risk_jobs.map((j) => (
                 <li key={j.id} className="py-2">
-                  <JobLink jobId={j.id} title={`${j.job_no} · ${j.title}`} className="block w-full hover:text-brand">
+                  <JobLink jobId={j.id} title={`${j.job_no} · ${j.title}`} className="block w-full py-0.5 hover:text-brand">
                     <div className="flex items-baseline justify-between gap-2 text-sm">
                       <span className="truncate font-medium">{j.job_no} {j.title}</span>
                       <span className="shrink-0 text-xs text-status-risk">{t('board.due', { d: formatDate(j.due_date) })}</span>
@@ -160,7 +160,7 @@ export function DashboardPage() {
 
 function Card({ title, hint, children }: { title: string; hint?: string; children: ReactNode }) {
   return (
-    <section className="rounded-[var(--radius-card)] border border-border bg-surface p-5">
+    <section className="min-w-0 rounded-[var(--radius-card)] border border-border bg-surface p-4 sm:p-5">
       <h2 className="font-semibold">{title}</h2>
       {hint && <p className="mb-3 text-xs text-muted">{hint}</p>}
       <div className={hint ? '' : 'mt-3'}>{children}</div>

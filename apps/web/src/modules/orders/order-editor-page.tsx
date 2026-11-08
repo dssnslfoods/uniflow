@@ -151,7 +151,7 @@ function OrderEditor({ order }: { order: Order | null }) {
   return (
     <div className="mx-auto max-w-[1400px]">
       <div className="mb-4 flex flex-wrap items-center gap-3">
-        <Link to="/orders" className="rounded-lg p-1.5 text-muted hover:bg-surface-2 hover:text-fg" aria-label={t('common.back')}>
+        <Link to="/orders" className="rounded-lg p-1.5 text-muted hover:bg-surface-2 hover:text-fg pointer-coarse:p-3" aria-label={t('common.back')}>
           <ArrowLeft className="size-5" />
         </Link>
         <h1 className="text-xl font-semibold">{order ? order.doc_no : t('orders.newTitle')}</h1>
@@ -266,7 +266,7 @@ function OrderEditor({ order }: { order: Order | null }) {
                     <div className="flex h-8 items-center justify-end gap-2">
                       <span className="tabular text-sm font-medium">{formatMoney(l.qty * l.unit_price)}</span>
                       {editable && lines.length > 1 && (
-                        <button type="button" aria-label={t('common.delete')} className="rounded-md p-1 text-muted hover:bg-surface-2 hover:text-status-risk"
+                        <button type="button" aria-label={t('common.delete')} className="rounded-md p-1 text-muted hover:bg-surface-2 hover:text-status-risk pointer-coarse:p-3"
                           onClick={() => setLines((ls) => ls.filter((x) => x.key !== l.key))}>
                           <Trash2 className="size-4" />
                         </button>

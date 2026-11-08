@@ -46,9 +46,9 @@ export function OrdersPage() {
         subtitle={t('orders.subtitle')}
         actions={
           <>
-            <div className="relative">
+            <div className="relative min-w-0 flex-1 sm:flex-none">
               <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted" aria-hidden />
-              <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t('common.search')} className="w-56 pl-9" aria-label={t('common.search')} />
+              <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t('common.search')} className="w-full pl-9 sm:w-56" aria-label={t('common.search')} />
             </div>
             {canCreate && (
               <Button onClick={newPo}>
@@ -68,7 +68,7 @@ export function OrdersPage() {
         <EmptyState Icon={FileText} title={t('orders.empty')} hint={t('orders.emptyHint')} actionLabel={canCreate ? t('orders.add') : undefined} onAction={newPo} />
       ) : (
         <>
-          <div className="mb-3 flex gap-1 overflow-x-auto" role="tablist">
+          <div className="-mx-4 mb-3 flex gap-1 overflow-x-auto px-4 pb-1 sm:mx-0 sm:px-0" role="tablist">
             {filters.map((f) => (
               <button
                 key={f}
@@ -76,7 +76,7 @@ export function OrdersPage() {
                 aria-selected={filter === f}
                 onClick={() => setFilter(f)}
                 className={cn(
-                  'flex items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-1.5 text-sm text-muted hover:bg-surface-2',
+                  'flex items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-1.5 text-sm text-muted hover:bg-surface-2 pointer-coarse:py-2.5',
                   filter === f && 'bg-surface font-medium text-fg shadow-sm ring-1 ring-border',
                 )}
               >
@@ -86,7 +86,46 @@ export function OrdersPage() {
             ))}
           </div>
 
-          <div className="overflow-x-auto rounded-[var(--radius-card)] border border-border bg-surface">
+          {/* Phones: one card per PO instead of a sideways-scrolling table. */}
+          <ul className="flex flex-col gap-2 sm:hidden">
+            {rows.map((o) => {
+              const days = o.due_date ? daysUntil(o.due_date) : null
+              const open = o.status === 'draft' || o.status === 'confirmed' || o.status === 'in_progress'
+              return (
+                <li key={o.id}>
+                  <Link
+                    to="/orders/$orderId"
+                    params={{ orderId: o.id }}
+                    className="block rounded-[var(--radius-card)] border border-border bg-surface px-4 py-3 active:bg-surface-2"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <div className="font-medium">{o.doc_no}</div>
+                        <div className="truncate text-xs text-muted">PO {o.customer_po_no}</div>
+                      </div>
+                      <SoStatusPill status={o.status} />
+                    </div>
+                    <div className="mt-1 truncate">{o.customer?.name}</div>
+                    <div className="mt-2 flex items-end justify-between gap-2 text-sm">
+                      <div>
+                        <span>{formatDate(o.due_date)}</span>
+                        {open && days !== null && (
+                          <span className={cn('ml-1.5 text-xs', days < 0 ? 'text-status-risk' : days <= 3 ? 'text-status-paused' : 'text-muted')}>
+                            {days < 0 ? t('orders.overdue', { n: -days }) : days === 0 ? t('orders.dueToday') : t('orders.inDays', { n: days })}
+                          </span>
+                        )}
+                      </div>
+                      <span className="tabular shrink-0 text-muted">
+                        {o.items.length} · <span className="font-medium text-fg">{formatMoney(orderTotal(o.items))}</span>
+                      </span>
+                    </div>
+                  </Link>
+                </li>
+              )
+            })}
+          </ul>
+
+          <div className="hidden overflow-x-auto rounded-[var(--radius-card)] border border-border bg-surface sm:block">
             <table className="w-full min-w-[720px] text-left">
               <thead className="bg-surface-2 text-xs text-muted">
                 <tr>
