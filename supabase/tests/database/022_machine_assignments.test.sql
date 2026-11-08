@@ -31,9 +31,10 @@ select throws_ok($$ select api.staffing_report(current_date - 7, current_date) $
 reset role;
 select tests.login(tests.user('sup@a.test'));
 select lives_ok($$ insert into app.machine_operators (machine_id, membership_id) select sm74, op1 from t_m $$, 'supervisor assigns op1 to SM74');
-select lives_ok($$ insert into app.machine_operators (machine_id, membership_id) select cut01, op1 from t_m $$, 'one person may look after several machines');
+select throws_ok($$ insert into app.machine_operators (machine_id, membership_id) select cut01, op1 from t_m $$,
+                 '23505', null, 'one person looks after one machine at a time');
 select lives_ok($$ insert into app.machine_operators (machine_id, membership_id) select sm74, op2 from t_m $$, 'one machine may have several people');
-select is((select count(*)::int from app.machine_assignments where valid_to is null), 3, 'each assignment opens a dated period');
+select is((select count(*)::int from app.machine_assignments where valid_to is null), 2, 'each assignment opens a dated period');
 select is((select assigned_by from app.machine_assignments
            where machine_id = (select sm74 from t_m) and membership_id = (select op1 from t_m)),
           (select sup_u from t_m), 'the history records who assigned');
