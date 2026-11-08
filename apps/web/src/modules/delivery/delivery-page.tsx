@@ -217,7 +217,8 @@ export function DeliveryNotePage({ deliveryId }: { deliveryId: string }) {
           <p className="whitespace-pre-line">{d.address ?? '—'}</p>
         </div>
       </section>
-      <table className="mt-5 w-full border-collapse text-sm">
+      <div className="mt-5 overflow-x-auto print:overflow-visible">
+      <table className="w-full border-collapse text-sm">
         <thead>
           <tr className="border-y border-black">
             <th className="w-10 py-2 text-left">#</th>
@@ -235,6 +236,7 @@ export function DeliveryNotePage({ deliveryId }: { deliveryId: string }) {
           ))}
         </tbody>
       </table>
+      </div>
       {d.note && <p className="mt-3 text-sm">{t('delivery.note')}: {d.note}</p>}
       <div className="mt-16 grid grid-cols-2 gap-10 text-center text-sm">
         {[t('delivery.sender'), t('delivery.receiverSign')].map((label, i) => (

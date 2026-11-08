@@ -81,8 +81,8 @@ export function ProcessesPage() {
           onAction={() => setEditing('new')}
         />
       ) : (
-        <div className="overflow-hidden rounded-[var(--radius-card)] border border-border bg-surface">
-          <table className="w-full text-left">
+        <div className="overflow-x-auto rounded-[var(--radius-card)] border border-border bg-surface">
+          <table className="w-full min-w-[560px] text-left">
             <thead className="bg-surface-2 text-xs text-muted">
               <tr>
                 <th className="px-4 py-2.5 font-medium">{t('processes.name')}</th>

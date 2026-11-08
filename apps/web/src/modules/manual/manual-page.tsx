@@ -213,9 +213,9 @@ export function ManualPage() {
         subtitle={t('manual.subtitle')}
         actions={
           <>
-            <div className="relative print:hidden">
+            <div className="relative min-w-0 flex-1 sm:flex-none print:hidden">
               <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted" aria-hidden />
-              <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t('manual.search')} className="w-56 pl-9" aria-label={t('manual.search')} />
+              <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t('manual.search')} className="w-full pl-9 sm:w-56" aria-label={t('manual.search')} />
             </div>
             <Button variant="secondary" className="print:hidden" onClick={() => window.print()}>
               <Printer className="size-4" aria-hidden />{t('manual.print')}

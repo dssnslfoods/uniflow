@@ -84,7 +84,7 @@ function ShiftsEditor({ calendarId, initial }: { calendarId: string; initial: Sh
                     <input type="time" aria-label="end" className="tabular rounded bg-transparent px-1 text-sm" value={s.end_time}
                       disabled={!canEdit} onChange={(e) => update(i, { end_time: e.target.value })} />
                     {canEdit && (
-                      <button type="button" aria-label={t('common.delete')} className="rounded p-0.5 text-muted hover:text-status-risk"
+                      <button type="button" aria-label={t('common.delete')} className="rounded p-0.5 text-muted hover:text-status-risk pointer-coarse:p-2"
                         onClick={() => { setShifts((all) => all.filter((_, j) => j !== i)); setDirty(true) }}>
                         <Trash2 className="size-3.5" />
                       </button>
@@ -92,7 +92,7 @@ function ShiftsEditor({ calendarId, initial }: { calendarId: string; initial: Sh
                   </span>
                 ))}
                 {canEdit && (
-                  <button type="button" className="rounded-md p-1 text-muted hover:bg-surface-2 hover:text-fg" aria-label={t('settings.addShift')}
+                  <button type="button" className="rounded-md p-1 text-muted hover:bg-surface-2 hover:text-fg pointer-coarse:p-3" aria-label={t('settings.addShift')}
                     onClick={() => { setShifts((all) => [...all, { weekday: d, start_time: '08:00', end_time: '17:00' }]); setDirty(true) }}>
                     <Plus className="size-4" />
                   </button>
@@ -147,7 +147,7 @@ function HolidaysEditor({ holidays }: { holidays: { id: string; day: string; nam
               <span className="tabular w-24 text-muted">{formatDate(h.day)}</span>
               <span className="flex-1">{h.name}</span>
               {canEdit && (
-                <button type="button" aria-label={t('common.delete')} className="rounded p-1 text-muted hover:text-status-risk"
+                <button type="button" aria-label={t('common.delete')} className="rounded p-1 text-muted hover:text-status-risk pointer-coarse:p-3"
                   onClick={() => remove.mutate(h.id, { onError })}>
                   <Trash2 className="size-4" />
                 </button>

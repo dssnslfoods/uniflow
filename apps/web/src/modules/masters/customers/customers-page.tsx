@@ -60,9 +60,9 @@ export function CustomersPage() {
         subtitle={t('customers.subtitle')}
         actions={
           <>
-            <div className="relative">
+            <div className="relative min-w-0 flex-1 sm:flex-none">
               <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted" aria-hidden />
-              <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t('common.search')} className="w-56 pl-9" aria-label={t('common.search')} />
+              <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t('common.search')} className="w-full pl-9 sm:w-56" aria-label={t('common.search')} />
             </div>
             {canEdit && (
               <Button onClick={() => setEditing('new')}>

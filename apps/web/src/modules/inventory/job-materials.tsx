@@ -128,7 +128,8 @@ export function JobMaterialsIssue({ jobId, active }: { jobId: string; active: bo
   return (
     <section className="rounded-[var(--radius-card)] border border-border bg-surface p-4">
       <h2 className="mb-2 font-semibold">{t('inventory.bom')}</h2>
-      <table className="w-full text-sm">
+      <div className="overflow-x-auto">
+      <table className="w-full min-w-[420px] text-sm">
         <thead className="text-xs text-muted">
           <tr>
             <th className="py-1.5 text-left font-medium">{t('inventory.material')}</th>
@@ -164,6 +165,7 @@ export function JobMaterialsIssue({ jobId, active }: { jobId: string; active: bo
           })}
         </tbody>
       </table>
+      </div>
       {open && (
         <IssueForm jobId={jobId} row={open.row} dir={open.dir}
           suggested={Math.max(0, open.dir === 1

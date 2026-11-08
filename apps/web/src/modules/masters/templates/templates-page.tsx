@@ -176,7 +176,7 @@ function TemplateEditor({ template, canEdit, onSaved }: { template: Template | n
           {(id) => <Input id={id} value={name} onChange={(e) => setName(e.target.value)} disabled={!canEdit} required autoFocus={!template} />}
         </Field>
         <Field label={t('templates.description')}>
-          {(id) => <Textarea id={id} rows={1} className="min-h-9" value={description} onChange={(e) => setDescription(e.target.value)} disabled={!canEdit} />}
+          {(id) => <Textarea id={id} rows={1} className="min-h-9 field-sizing-content" value={description} onChange={(e) => setDescription(e.target.value)} disabled={!canEdit} />}
         </Field>
       </div>
 
@@ -272,7 +272,7 @@ function TemplateEditor({ template, canEdit, onSaved }: { template: Template | n
 
 function IconBtn({ label, children, ...props }: ButtonHTMLAttributes<HTMLButtonElement> & { label: string }) {
   return (
-    <button type="button" aria-label={label} title={label} className="rounded-md p-1.5 text-muted hover:bg-surface-2 hover:text-fg disabled:opacity-30" {...props}>
+    <button type="button" aria-label={label} title={label} className="rounded-md p-1.5 text-muted hover:bg-surface-2 hover:text-fg disabled:opacity-30 pointer-coarse:p-3" {...props}>
       {children}
     </button>
   )

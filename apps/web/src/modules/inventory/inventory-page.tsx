@@ -212,7 +212,8 @@ function CardDrawer({ row, onClose }: { row: StockRow; onClose: () => void }) {
       {moves.isLoading ? <ListSkeleton rows={4} /> : moves.error ? <ErrorNote>{errorMessage(moves.error)}</ErrorNote> : (moves.data ?? []).length === 0 ? (
         <p className="text-sm text-muted">{t('inventory.noMovements')}</p>
       ) : (
-        <table className="w-full text-sm">
+        <div className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
+        <table className="w-full min-w-[520px] text-sm">
           <thead className="text-xs text-muted">
             <tr>
               <th className="py-2 text-left font-medium">{t('common.date')}</th>
@@ -238,6 +239,7 @@ function CardDrawer({ row, onClose }: { row: StockRow; onClose: () => void }) {
             ))}
           </tbody>
         </table>
+        </div>
       )}
     </Drawer>
   )
