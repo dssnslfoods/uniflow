@@ -286,7 +286,7 @@ export function BoardPage() {
               </button>
             ))}
           </div>
-          <Button variant="secondary" onClick={() => reschedule.mutate()} loading={reschedule.isPending} title={t('board.refresh')}>
+          <Button variant="secondary" onClick={() => reschedule.mutate()} loading={reschedule.isPending} title={t('board.refreshHint')} aria-description={t('board.refreshHint')}>
             <RefreshCw className="size-4" aria-hidden />
             <span className="sr-only sm:not-sr-only">{t('board.refresh')}</span>
           </Button>
