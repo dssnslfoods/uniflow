@@ -236,10 +236,15 @@ otp_expiry = 3600
 # admin_email = "admin@email.com"
 # sender_name = "Admin"
 
-# Uncomment to customize email template
-# [auth.email.template.invite]
-# subject = "You have been invited"
-# content_path = "./supabase/templates/invite.html"
+# Invitation email (Thai, Uniflow branding). Keep the hosted project in sync with this file.
+[auth.email.template.invite]
+subject = "คำเชิญเข้าใช้งาน Uniflow{{ with .Data.shop_name }} — {{ . }}{{ end }}"
+content_path = "./supabase/templates/invite.html"
+
+# Password reset email: link only; the app's forgot-password page has no code step.
+[auth.email.template.recovery]
+subject = "รีเซ็ตรหัสผ่าน Uniflow"
+content_path = "./supabase/templates/recovery.html"
 
 # Uncomment to customize notification email template
 # [auth.email.notification.password_changed]

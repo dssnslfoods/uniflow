@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
+<title>ตั้งรหัสผ่านใหม่ Uniflow</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+<body style="margin:0;padding:0;background:#f4f4f7;font-family:'IBM Plex Sans Thai',Tahoma,'Segoe UI',Arial,sans-serif;color:#1f2330;">
+  <span style="display:none;max-height:0;overflow:hidden;opacity:0;">กดปุ่มในอีเมลนี้เพื่อตั้งรหัสผ่านใหม่ ลิงก์หมดอายุใน 1 ชั่วโมง</span>
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f4f4f7;">
+    <tr>
+      <td align="center" style="padding:32px 16px;">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:560px;">
+
+          <!-- Brand -->
+          <tr>
+            <td style="padding:0 4px 20px;">
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td width="40" height="40" align="center" valign="middle" style="background:#4f46e5;border-radius:10px;color:#ffffff;font-size:20px;font-weight:700;line-height:40px;">U</td>
+                  <td style="padding-left:12px;">
+                    <div style="font-size:17px;font-weight:700;color:#1f2330;line-height:1.2;">Uniflow</div>
+                    <div style="font-size:12px;color:#6b7080;line-height:1.4;">บริหารงานผลิตโรงพิมพ์</div>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Card -->
+          <tr>
+            <td style="background:#ffffff;border:1px solid #e6e6ec;border-radius:16px;overflow:hidden;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr><td style="height:6px;background:#4f46e5;font-size:0;line-height:0;">&nbsp;</td></tr>
+                <tr>
+                  <td style="padding:32px 32px 8px;">
+                    <div style="display:inline-block;background:#eef0ff;color:#4f46e5;font-size:12px;font-weight:600;padding:4px 10px;border-radius:999px;">รีเซ็ตรหัสผ่าน</div>
+                    <h1 style="margin:16px 0 8px;font-size:24px;line-height:1.35;font-weight:700;color:#1f2330;">
+                      ตั้งรหัสผ่านใหม่สำหรับ <span style="color:#4f46e5;">Uniflow</span>
+                    </h1>
+                    <p style="margin:0 0 4px;font-size:15px;line-height:1.7;color:#3a3f4d;">
+                      สวัสดี{{ with .Data.full_name }}คุณ{{ . }}{{ end }} ครับ/ค่ะ
+                    </p>
+                    <p style="margin:0;font-size:15px;line-height:1.7;color:#3a3f4d;">
+                      เราได้รับคำขอตั้งรหัสผ่านใหม่สำหรับบัญชีของคุณ
+                      กดปุ่มด้านล่างเพื่อเลือกรหัสผ่านใหม่และกลับเข้าใช้งาน
+                    </p>
+                  </td>
+                </tr>
+
+                <!-- Button -->
+                <tr>
+                  <td align="left" style="padding:24px 32px 8px;">
+                    <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+                      <tr>
+                        <td align="center" bgcolor="#4f46e5" style="border-radius:10px;">
+                          <a href="{{ .ConfirmationURL }}" target="_blank"
+                             style="display:inline-block;padding:14px 28px;font-size:16px;font-weight:600;color:#ffffff;text-decoration:none;border-radius:10px;">
+                            ตั้งรหัสผ่านใหม่ &rarr;
+                          </a>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+
+                <!-- Account -->
+                <tr>
+                  <td style="padding:16px 32px 0;">
+                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f7f7fa;border-radius:10px;">
+                      <tr>
+                        <td style="padding:12px 16px;font-size:13px;color:#6b7080;">บัญชีที่ขอรีเซ็ต</td>
+                        <td align="right" style="padding:12px 16px;font-size:14px;font-weight:600;color:#1f2330;">{{ .Email }}</td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+
+                <!-- Steps -->
+                <tr>
+                  <td style="padding:24px 32px 8px;">
+                    <div style="font-size:14px;font-weight:600;color:#1f2330;margin-bottom:12px;">ตั้งรหัสผ่านใหม่ใน 3 ขั้นตอน</div>
+                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                      <tr>
+                        <td width="32" valign="top" style="padding-bottom:12px;"><div style="width:24px;height:24px;border-radius:999px;background:#eef0ff;color:#4f46e5;font-size:12px;font-weight:700;text-align:center;line-height:24px;">1</div></td>
+                        <td valign="top" style="padding-bottom:12px;font-size:14px;line-height:1.6;color:#3a3f4d;">กดปุ่ม <b>ตั้งรหัสผ่านใหม่</b> ด้านบน</td>
+                      </tr>
+                      <tr>
+                        <td width="32" valign="top" style="padding-bottom:12px;"><div style="width:24px;height:24px;border-radius:999px;background:#eef0ff;color:#4f46e5;font-size:12px;font-weight:700;text-align:center;line-height:24px;">2</div></td>
+                        <td valign="top" style="padding-bottom:12px;font-size:14px;line-height:1.6;color:#3a3f4d;">กรอกรหัสผ่านใหม่ (อย่างน้อย 6 ตัวอักษร)</td>
+                      </tr>
+                      <tr>
+                        <td width="32" valign="top"><div style="width:24px;height:24px;border-radius:999px;background:#eef0ff;color:#4f46e5;font-size:12px;font-weight:700;text-align:center;line-height:24px;">3</div></td>
+                        <td valign="top" style="font-size:14px;line-height:1.6;color:#3a3f4d;">ครั้งต่อไปเข้าระบบที่ <a href="{{ .SiteURL }}" style="color:#4f46e5;text-decoration:none;font-weight:600;">uniflow-mrp.web.app</a> ด้วยรหัสผ่านใหม่</td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+
+                <!-- Security note -->
+                <tr>
+                  <td style="padding:16px 32px 0;">
+                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#fff8eb;border-radius:10px;">
+                      <tr>
+                        <td style="padding:12px 16px;font-size:13px;line-height:1.6;color:#8a5a00;">
+                          <b>ไม่ได้ขอรีเซ็ตรหัสผ่าน?</b> ไม่ต้องทำอะไร รหัสผ่านเดิมยังใช้ได้ตามปกติ
+                          และอย่าส่งต่ออีเมลนี้ให้ผู้อื่น
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+
+                <!-- Fallback link -->
+                <tr>
+                  <td style="padding:16px 32px 32px;">
+                    <div style="border-top:1px solid #ececf1;padding-top:16px;font-size:12px;line-height:1.6;color:#8a8f9c;">
+                      ปุ่มกดไม่ได้? คัดลอกลิงก์นี้ไปเปิดในเบราว์เซอร์<br>
+                      <a href="{{ .ConfirmationURL }}" style="color:#4f46e5;word-break:break-all;">{{ .ConfirmationURL }}</a><br><br>
+                      ลิงก์นี้ใช้ได้ครั้งเดียวและหมดอายุใน 1 ชั่วโมง หากหมดอายุ ขอลิงก์ใหม่ได้ที่หน้า "ลืมรหัสผ่าน"
+                    </div>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td align="center" style="padding:20px 16px 0;font-size:12px;line-height:1.6;color:#8a8f9c;">
+              Uniflow · ระบบบริหารงานผลิตโรงพิมพ์<br>
+              <span style="color:#a3a7b3;">Someone asked to reset the password for this Uniflow account. Use the button above, or ignore this email.</span>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>

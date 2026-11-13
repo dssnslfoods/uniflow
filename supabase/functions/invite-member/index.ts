@@ -46,15 +46,20 @@ Deno.serve(async (req) => {
   if (withPassword && password.length < 6) return reply(400, { code: 'auth.weak_password' })
   const fullName = (body.fullName ?? '').trim()
 
-  // Check permission before any email goes out.
+  // Check permission before any email goes out. The shop's name is read here (never taken from
+  // the request) so the invitation email can name it.
+  let shopName = ''
   if (body.tenantId) {
     const { error: consoleError } = await asCaller.schema('api').rpc('admin_list_members', { p_tenant: body.tenantId })
     if (consoleError) return reply(403, { code: consoleError.details ?? 'auth.forbidden', message: consoleError.message })
+    const { data: tenant } = await admin.schema('app').from('tenants').select('name').eq('id', body.tenantId).single()
+    shopName = (tenant as { name?: string } | null)?.name ?? ''
   } else {
     const { data: tenants, error: tenantsError } = await asCaller.schema('api').rpc('my_tenants')
     if (tenantsError) return reply(401, { code: 'auth.required' })
-    const current = (tenants as { roles: string[]; is_current: boolean }[]).find((t) => t.is_current)
+    const current = (tenants as { tenant_id: string; name: string; roles: string[]; is_current: boolean }[]).find((t) => t.is_current)
     if (!current?.roles.includes('admin')) return reply(403, { code: 'auth.forbidden' })
+    shopName = current.name
   }
 
   // A full plan must fail here: once the invitation is sent it cannot be taken back.
@@ -72,7 +77,7 @@ Deno.serve(async (req) => {
       })
     : await admin.auth.admin.inviteUserByEmail(email, {
         redirectTo: body.redirectTo,
-        data: fullName ? { full_name: fullName } : undefined,
+        data: { ...(fullName ? { full_name: fullName } : {}), ...(shopName ? { shop_name: shopName } : {}) },
       })
   const alreadyExists = !!createError && /already|registered|exists/i.test(createError.message)
   if (createError && !alreadyExists) {
